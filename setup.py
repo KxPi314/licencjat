@@ -1,26 +1,31 @@
-from PIL import Image
+import random
 import tkinter as tk
+from PIL import ImageTk, Image
 
-image = Image.open('Grass.png')
-crop_box = (16,0,32,16)
-image = image.crop(crop_box)
-image.save('tile1.png')
+x = 20
+y = 20
+map_size = (x, y)
+name = "window name"
+f_names = ['trawa','drzwi','sciana','woda']
+assets = []
+def load_assets():
+    for file in f_names:
+        assets.append(ImageTk.PhotoImage(Image.open("map_assets/"+file+".png").resize((cell_size, cell_size))))
 
-def load_and_display_image():
-    # Provide the path to your cropped image
-    cropped_img_path = 'tile1.png'
-    root = tk.Tk()
-    tk_image = tk.PhotoImage(file=cropped_img_path)
-    label = tk.Label(root, image=tk_image)
-    label.pack()
-    root.mainloop()
+cell_size = 16
+root = tk.Tk()
+canvas = tk.Canvas(root, width=map_size[0] * cell_size, height=map_size[1] * cell_size, background='black')
+canvas.pack()
+s_1 = 1*cell_size
+s_2 = 1*cell_size
 
-load_and_display_image()
+load_assets()
+for i in range(map_size[0]):
+    for j in range(map_size[1]):
+        canvas.create_image(i*cell_size, j*cell_size, anchor=tk.NW, image=assets[random.randint(0, 3)])
 
-
-
-#pobierz zdj
-#zapisz jako zmienne
-#użyj wygenerowanej mapy
-#zklej zdj za pomocą assetów. wyświetl
-#zapisz pdf
+root.title("name")
+root.iconbitmap("map_assets/drzwi.png")
+my_label = tk.Label(root, text=name)
+my_label.pack()
+root.mainloop()
