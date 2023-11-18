@@ -1,2 +1,7 @@
 # licencjat
-test gita i zapis kodu do projektu
+Cele:
+  - aplikacja okienkowa w Pythonie
+  - projekt gui
+  - implementacja algorytmu a*
+  - implementacja algorytmu wave function colapse
+    
