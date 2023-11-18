@@ -1,31 +1,44 @@
 import random
+import constant
 import tkinter as tk
 from PIL import ImageTk, Image
 
-x = 20
-y = 20
-map_size = (x, y)
-name = "window name"
-f_names = ['trawa','drzwi','sciana','woda']
-assets = []
-def load_assets():
-    for file in f_names:
-        assets.append(ImageTk.PhotoImage(Image.open("map_assets/"+file+".png").resize((cell_size, cell_size))))
 
-cell_size = 16
-root = tk.Tk()
-canvas = tk.Canvas(root, width=map_size[0] * cell_size, height=map_size[1] * cell_size, background='black')
-canvas.pack()
-s_1 = 1*cell_size
-s_2 = 1*cell_size
+class GUI():
+    def __init__(self, x, y):
+        self.map_grid_size = (x, y)
+        self.map_cell_size = constant.MAP_CELL_SIZE
+        self.window_name = "window name"
+        self.assets = []
+        self.assets_names = ['trawa', 'drzwi', 'sciana', 'woda']
+        self.root = tk.Tk()
+        self.canvas = tk.Canvas(
+            self.root,
+            width=self.map_grid_size[0] * self.map_cell_size,
+            height=self.map_grid_size[1] * self.map_cell_size, background='black'
+        )
+        self.load_map()
+        self.canvas.pack()
+        self.root.title(self.window_name)
+        self.root.iconbitmap("map_assets/drzwi.png")
+        self.root.mainloop()
 
-load_assets()
-for i in range(map_size[0]):
-    for j in range(map_size[1]):
-        canvas.create_image(i*cell_size, j*cell_size, anchor=tk.NW, image=assets[random.randint(0, 3)])
+    def load_map(self):
+        self.load_map_assets()
+        for i in range(self.map_grid_size[0]):
+            for j in range(self.map_grid_size[1]):
+                self.canvas.create_image(
+                    i * self.map_cell_size,
+                    j * self.map_cell_size,
+                    anchor=tk.NW,
+                    image=self.assets[random.randint(0, 3)]
+                )
 
-root.title("name")
-root.iconbitmap("map_assets/drzwi.png")
-my_label = tk.Label(root, text=name)
-my_label.pack()
-root.mainloop()
+    def load_map_assets(self):
+        for file in self.assets_names:
+            self.assets.append(
+                ImageTk.PhotoImage(
+                    Image.open("map_assets/" + file + ".png")
+                    .resize((self.map_cell_size, self.map_cell_size))
+                )
+            )
