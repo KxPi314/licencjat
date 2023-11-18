@@ -1,0 +1,1 @@
+MAP_CELL_SIZE = 30
