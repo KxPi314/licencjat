@@ -1,11 +1,12 @@
-import random
+import waveFunctionCollapse
 import constant
 import tkinter as tk
 from PIL import ImageTk, Image
 
 
 class GUI():
-    def __init__(self, x, y):
+    def __init__(self, x, y, grid):
+        self.grid = grid
         self.map_grid_size = (x, y)
         self.map_cell_size = constant.MAP_CELL_SIZE
         self.window_name = "window name"
@@ -27,11 +28,20 @@ class GUI():
         self.load_map_assets()
         for i in range(self.map_grid_size[0]):
             for j in range(self.map_grid_size[1]):
+                choice = 0
+                if self.grid[i][j].type == waveFunctionCollapse.CellTypes.grass:
+                    choice = 0
+                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.water:
+                    choice = 3
+                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.wall:
+                    choice = 2
+                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.door:
+                    choice = 1
                 self.canvas.create_image(
                     i * self.map_cell_size,
                     j * self.map_cell_size,
                     anchor=tk.NW,
-                    image=self.assets[random.randint(0, 3)]
+                    image=self.assets[choice]
                 )
 
     def load_map_assets(self):

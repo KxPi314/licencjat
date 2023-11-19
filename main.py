@@ -1,5 +1,11 @@
+import constant
 import setup
+import waveFunctionCollapse
 
 if __name__ == '__main__':
-    gui = setup.GUI(20, 20)
+    grid = waveFunctionCollapse.Grid()
+    arr = grid.collapse_all()
+
+    gui = setup.GUI(constant.GRID_SIZE, constant.GRID_SIZE, arr)
+
 
