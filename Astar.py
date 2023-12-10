@@ -1,7 +1,7 @@
 from Map import Map
 
 
-def a_star_path(start: (int, int), target: (int, int), _map: Map):
+def a_star_path(start: (int, int), target: (int, int), _map: Map) -> [(int, int)]:
     open_set = []
     closed_set = set()
     came_from = {}
