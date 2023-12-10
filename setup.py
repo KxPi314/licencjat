@@ -11,7 +11,7 @@ class GUI():
         self.map_cell_size = constant.MAP_CELL_SIZE
         self.window_name = "window name"
         self.assets = []
-        self.assets_names = ['trawa', 'drzwi', 'sciana', 'woda']
+        self.assets_names = ['trawa', 'drzwi', 'sciana', 'woda', 'blank']
         self.root = tk.Tk()
         self.canvas = tk.Canvas(
             self.root,
@@ -31,12 +31,16 @@ class GUI():
                 choice = 0
                 if self.grid[i][j].type == waveFunctionCollapse.CellTypes.grass:
                     choice = 0
-                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.water:
-                    choice = 3
-                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.wall:
-                    choice = 2
                 elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.door:
                     choice = 1
+                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.wall:
+                    choice = 2
+                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.water:
+                    choice = 3
+                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.floor:
+                    choice = 4
+                else:
+                    choice = 4
                 self.canvas.create_image(
                     i * self.map_cell_size,
                     j * self.map_cell_size,
