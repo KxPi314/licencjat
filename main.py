@@ -1,20 +1,10 @@
-import random
-
 import constant
 import setup
-import waveFunctionCollapse
-import functools
+from map_elements import Map
+import Astar
+from textures_and_data import TileTypes
 
 if __name__ == '__main__':
+    tile_types = TileTypes("map_assets/v.3/Island_24x24.png", "map_assets_data/v.3/pond.csv", (8, 9))
 
-    list_a = [random.random()-0.5 for _ in range(1000)]
-
-
-    # read template
-    # pass template to bild wave
-    grid = waveFunctionCollapse.Grid()
-    arr = grid.collapse_all()
-    gui = setup.GUI(constant.GRID_SIZE, constant.GRID_SIZE, arr)
-    gui.load_map()
-
-
+    gui = setup.GUI()

@@ -6,6 +6,10 @@ grid_size = constant.GRID_SIZE
 cell_type_num = 5
 
 
+def collapse():
+    return 1
+
+
 class CellTypes(Enum):
     blank = 0
     grass = 1
@@ -13,6 +17,7 @@ class CellTypes(Enum):
     wall = 3
     door = 4
     floor = 5
+
 
 class Cell:
     def __init__(self):
@@ -32,12 +37,11 @@ class Cell:
         elif self.type == CellTypes.water:
             return list([CellTypes.grass, CellTypes.water])
         elif self.type == CellTypes.wall:
-            return list([CellTypes.grass, CellTypes.door, CellTypes.wall])
+            return list([CellTypes.grass, CellTypes.door, CellTypes.wall, CellTypes.floor])
         elif self.type == CellTypes.door:
-            return list([CellTypes.wall, CellTypes.floor])
+            return list([CellTypes.wall, CellTypes.floor, CellTypes.grass])
         elif self.type == CellTypes.floor:
-            return list([CellTypes.wall, CellTypes.door])
-
+            return list([CellTypes.wall, CellTypes.door, CellTypes.floor, CellTypes.floor, CellTypes.floor])
 
 
 class Grid:
@@ -68,12 +72,12 @@ class Grid:
         return best[random.randint(0, len(best) - 1)]
 
     def update_near_collapsed(self, x, y):
-        arr = [(x, y-1), (x, y+1), (x-1, y), (x+1, y)]
+        arr = [(x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y)]
         for (i, j) in arr:
             if i in range(0, grid_size) and j in range(0, grid_size) and not self.grid[i][j].collapsed:
                 self.grid[i][j].options = list(set(self.grid[i][j].options) &
                                                set(self.grid[x][y].get_connection_list()))
-                #if len(self.grid[i][j].options) == 1:
+                # if len(self.grid[i][j].options) == 1:
                 #    self.collapse_cell(i, j)
 
     def collapse_all(self):
@@ -88,5 +92,4 @@ class Grid:
             self.update_near_collapsed(best_x, best_y)
         return self.grid
 
-
-#zle sprawdza gdzie co możę być/ drzwi przy wodzie np.
+# zle sprawdza gdzie co możę być/ drzwi przy wodzie np.

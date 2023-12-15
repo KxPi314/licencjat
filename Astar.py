@@ -1,4 +1,4 @@
-from Map import Map
+from map_elements import Map
 
 
 def a_star_path(start: (int, int), target: (int, int), _map: Map) -> [(int, int)]:
@@ -15,7 +15,9 @@ def a_star_path(start: (int, int), target: (int, int), _map: Map) -> [(int, int)
     while len(open_set) > 0:
         current = get_lowest_f_score(open_set, f_score)
         if current == target:
-            return reconstruct_path(came_from, current)
+            path = reconstruct_path(came_from, current)
+            print(f"Przeszukano {len(closed_set)} elementów \n Długość ścieżki: {len(path)}")
+            return path
 
         open_set.remove(current)
         closed_set.add(current)
@@ -37,6 +39,7 @@ def a_star_path(start: (int, int), target: (int, int), _map: Map) -> [(int, int)
 def get_neighbors(current: (int, int), _map: Map) -> [(int, int)]:
     neighbors = []
     x, y = current
+    # Dla kwadratowej, sąsiedz w kształcie +
     options = [(x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y)]
     for (i, j) in options:
         if 0 <= i < _map.grid_size[0] and 0 <= j < _map.grid_size[1]:

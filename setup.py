@@ -1,58 +1,63 @@
-import waveFunctionCollapse
+from map_elements import Map
 import constant
 import tkinter as tk
 from PIL import ImageTk, Image
 
 
-class GUI():
-    def __init__(self, x, y, grid):
-        self.grid = grid
-        self.map_grid_size = (x, y)
-        self.map_cell_size = constant.MAP_CELL_SIZE
-        self.window_name = "window name"
-        self.assets = []
-        self.assets_names = ['trawa', 'drzwi', 'sciana', 'woda', 'blank']
+class GUI:
+    _map: Map
+
+    def __init__(self, _map: Map):
+        self.window_name = "map"
         self.root = tk.Tk()
+
+        # Canvas
         self.canvas = tk.Canvas(
             self.root,
-            width=self.map_grid_size[0] * self.map_cell_size,
-            height=self.map_grid_size[1] * self.map_cell_size, background='black'
+            width=constant.GRID_SIZE[1] * constant.TILE_SIZE[1],
+            height=constant.GRID_SIZE[0] * constant.TILE_SIZE[0],
+            background='black'
         )
-        self.load_map()
-        self.canvas.pack()
+        self.canvas.pack(side=tk.LEFT)
+
+        button_frame = tk.Frame(self.root, bg='gray', padx=10, pady=10)
+        button_frame.pack(side=tk.RIGHT, fill=tk.Y)
+
+        button1 = tk.Button(button_frame, text="Button 1", command=self.button1_action)
+        button2 = tk.Button(button_frame, text="Button 2", command=self.button2_action)
+        button3 = tk.Button(button_frame, text="Button 3", command=self.button3_action)
+        button4 = tk.Button(button_frame, text="Button 4", command=self.button4_action)
+
+        # Pack buttons
+        button1.pack(pady=5)
+        button2.pack(pady=5)
+        button3.pack(pady=5)
+        button4.pack(pady=5)
+
+        # Window title and main loop
         self.root.title(self.window_name)
-        self.root.iconbitmap("map_assets/drzwi.png")
         self.root.mainloop()
 
-    def load_map(self):
-        self.load_map_assets()
-        for i in range(self.map_grid_size[0]):
-            for j in range(self.map_grid_size[1]):
-                choice = 0
-                if self.grid[i][j].type == waveFunctionCollapse.CellTypes.grass:
-                    choice = 0
-                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.door:
-                    choice = 1
-                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.wall:
-                    choice = 2
-                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.water:
-                    choice = 3
-                elif self.grid[i][j].type == waveFunctionCollapse.CellTypes.floor:
-                    choice = 4
-                else:
-                    choice = 4
+    def button1_action(self):
+        print("Button 1 clicked")
+        self.load_map_texture()
+
+    def button2_action(self):
+        print("Button 2 clicked")
+
+    def button3_action(self):
+        print("Button 3 clicked")
+
+    def button4_action(self):
+        print("Button 4 clicked")
+
+    def load_map_texture(self):
+        for i in range(constant.GRID_SIZE[0]):
+            for j in range(constant.GRID_SIZE[1]):
                 self.canvas.create_image(
-                    i * self.map_cell_size,
-                    j * self.map_cell_size,
+                    i * constant.TILE_SIZE[0],
+                    j * constant.TILE_SIZE[1],
                     anchor=tk.NW,
-                    image=self.assets[choice]
+                    image=self._map.grid[i][j].tile_type
                 )
 
-    def load_map_assets(self):
-        for file in self.assets_names:
-            self.assets.append(
-                ImageTk.PhotoImage(
-                    Image.open("map_assets/" + file + ".png")
-                    .resize((self.map_cell_size, self.map_cell_size))
-                )
-            )

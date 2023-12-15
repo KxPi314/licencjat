@@ -1,5 +1,6 @@
 import Astar
-from Map import Map, Tile
+from map_elements import Map, Tile
+import time
 
 with open('template.txt', 'r') as file:
 
@@ -17,9 +18,10 @@ for row in range(len(map_txt)):
         else:
             game_map.grid[row][col] = Tile(row, col, True)
 
-print(game_map.grid[1][2].walkable)
-path = Astar.a_star_path((1, 1), (7, 1), game_map)
-print(len(path))
+start_time = time.time()
+path = Astar.a_star_path((1, 1), (28, 22), game_map)
+end_time = time.time()
+print("czas: ", end_time - start_time)
 arr = []
 for row in range(len(map_txt)):
     line = []
