@@ -28,7 +28,6 @@ class TileTypes:
                     tile_textures.append(tile_texture)
 
         self.tile_type_dict = {}
-        print(len(tile_textures))
         for index, tile_data in enumerate(data):
             self.tile_type_dict[tile_data[0]] = (tile_data[1], tile_data[2], tile_textures[index])
 

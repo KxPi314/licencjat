@@ -28,7 +28,7 @@ class Map:
         if algorithm == 'wfc':
             self.grid = wfc.collapse()
         elif algorithm == 'inny':
-            self.grid = "cos innego"
+            self.grid = []
         else:
             self.grid = "cos innego"
 

@@ -1,2 +1,2 @@
-TILE_SIZE = (30, 30)
-GRID_SIZE = (30, 30)
+TILE_SIZE = (64, 64)
+GRID_SIZE = (8, 6)

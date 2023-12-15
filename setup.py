@@ -1,8 +1,7 @@
+from PIL import Image, ImageTk
+import tkinter as tk
 from map_elements import Map
 import constant
-import tkinter as tk
-from PIL import ImageTk, Image
-
 
 class GUI:
     _map: Map
@@ -10,6 +9,7 @@ class GUI:
     def __init__(self, _map: Map):
         self.window_name = "map"
         self.root = tk.Tk()
+        self._map = _map
 
         # Canvas
         self.canvas = tk.Canvas(
@@ -19,6 +19,9 @@ class GUI:
             background='black'
         )
         self.canvas.pack(side=tk.LEFT)
+
+        # Keep references to PhotoImage objects
+        self.image_references = []
 
         button_frame = tk.Frame(self.root, bg='gray', padx=10, pady=10)
         button_frame.pack(side=tk.RIGHT, fill=tk.Y)
@@ -52,12 +55,32 @@ class GUI:
         print("Button 4 clicked")
 
     def load_map_texture(self):
-        for i in range(constant.GRID_SIZE[0]):
-            for j in range(constant.GRID_SIZE[1]):
-                self.canvas.create_image(
-                    i * constant.TILE_SIZE[0],
-                    j * constant.TILE_SIZE[1],
-                    anchor=tk.NW,
-                    image=self._map.grid[i][j].tile_type
+        # Ensure the canvas dimensions are large enough for the resized images
+        canvas_width = constant.GRID_SIZE[0] * constant.TILE_SIZE[0]
+        canvas_height = constant.GRID_SIZE[1] * constant.TILE_SIZE[1]
+        self.canvas.config(width=canvas_width, height=canvas_height)
+
+        for i in range(len(self._map.grid)):
+            for j in range(len(self._map.grid[0])):
+                # Assuming _map.grid[i][j] is a PIL Image object
+                pil_image = self._map.grid[i][j]
+
+                # Resize the image to the desired dimensions with antialiasing
+                resized_image = pil_image.resize(
+                    (constant.TILE_SIZE[0], constant.TILE_SIZE[1])
+
                 )
 
+                # Convert the resized PIL image to Tkinter-compatible PhotoImage
+                tk_image = ImageTk.PhotoImage(resized_image)
+
+                # Create the image on the canvas
+                self.canvas.create_image(
+                    j * constant.TILE_SIZE[0],
+                    i * constant.TILE_SIZE[1],
+                    anchor=tk.NW,
+                    image=tk_image
+                )
+
+                # Keep a reference to avoid garbage collection
+                self.image_references.append(tk_image)
