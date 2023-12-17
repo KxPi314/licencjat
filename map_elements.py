@@ -1,5 +1,4 @@
 import constant
-import wave_function_collapse as wfc
 
 
 class Tile:
@@ -21,15 +20,14 @@ class Map:
     grid_size: (int, int)
     grid: [[Tile]]
 
-    def __init__(self, algorithm: str):
+    def __init__(self):
         self.grid_size = constant.GRID_SIZE
         self.grid = []
+        for _ in range(constant.GRID_SIZE[0]):
+            temp = []
+            for _ in range(constant.GRID_SIZE[1]):
+                temp.append(None)
+            self.grid.append(temp)
 
-        if algorithm == 'wfc':
-            self.grid = wfc.collapse()
-        elif algorithm == 'inny':
-            self.grid = []
-        else:
-            self.grid = "cos innego"
 
 
