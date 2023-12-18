@@ -15,7 +15,6 @@ class GUI:
         self._map = _map
         self.tile_types = tile_types
 
-        # Canvas
         self.canvas = tk.Canvas(
             self.root,
             width=constant.GRID_SIZE[1] * constant.TILE_SIZE[1],
@@ -26,20 +25,28 @@ class GUI:
         self.image_references = []
 
         button_frame = tk.Frame(self.root, bg='gray', padx=10, pady=10)
-        button_frame.pack(side=tk.RIGHT, fill=tk.Y)
 
-        button1 = tk.Button(button_frame, text="Button 1", command=self.button1_action)
-        button2 = tk.Button(button_frame, text="Button 2", command=self.button2_action)
-        button3 = tk.Button(button_frame, text="Button 3", command=self.button3_action)
-        button4 = tk.Button(button_frame, text="Button 4", command=self.button4_action)
+        listbox = tk.Listbox(button_frame, bg='grey', height=3)
+        button2 = tk.Button(button_frame, text="nowa mapa", command=self.button2_action, width=15)
+        button3 = tk.Button(button_frame, text="A star", command=self.button3_action, width=15)
+        button4 = tk.Button(button_frame, text="zapisz", command=self.button4_action, width=15)
 
-        # Pack buttons
-        button1.pack(pady=5)
+        text = tk.StringVar()
+        text.set("wynik: 0")
+        score = tk.Label(button_frame, textvariable=text)
+        score.pack()
+
+        listbox.insert(1, 'algorytm1')
+        listbox.insert(1, 'algorytm2')
+        listbox.insert(1, 'algorytm3')
+        listbox.pack(pady=5)
+
         button2.pack(pady=5)
         button3.pack(pady=5)
         button4.pack(pady=5)
 
-        # Window title and main loop
+        button_frame.pack(side=tk.RIGHT, fill=tk.Y)
+
         self.root.title(self.window_name)
         self.root.mainloop()
 
@@ -76,5 +83,4 @@ class GUI:
                         image=tk_image
                     )
 
-                    # Keep a reference to avoid garbage collection
                     self.image_references.append(tk_image)
