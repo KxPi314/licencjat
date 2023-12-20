@@ -3,6 +3,7 @@ from PIL import Image
 
 class TileTypes:
     tile_type_dict: dict
+    tile_type_name_set: set
 
     def __init__(self, tile_type_texture_path: str, tile_type_data_path: str, grid_size: (int, int)):
         with open(tile_type_data_path, 'r') as file:
@@ -28,7 +29,9 @@ class TileTypes:
                     tile_textures.append(tile_texture)
 
         self.tile_type_dict = {}
+        self.tile_type_name_set = set()
         for index, tile_data in enumerate(data):
             self.tile_type_dict[tile_data[0]] = (tile_data[1], tile_data[2], tile_textures[index])
+            self.tile_type_name_set.add(tile_data[0])
 
 

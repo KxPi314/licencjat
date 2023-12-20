@@ -1,3 +1,5 @@
+import random
+
 import constant
 from map_elements import Map, Tile
 from textures_and_data import TileTypes
@@ -7,34 +9,75 @@ class Algorithm:
     _map: Map
     tile_types: TileTypes
 
-    def __init__(self, _map: Map):
+    def __init__(self, _map: Map, tile_type: TileTypes):
         self._map = _map
+        self.tile_types = tile_type
 
     def generate_map_grid(self) -> [[Tile]]:
         pass
 
 
+class WCFTile(Tile):
+    options: [str]
+    collapsed: bool
+
+    def __init__(self, row, col, start_options):
+        super().__init__(row, col)
+        # trzeba by jakieś ustalić
+        self.options = start_options
+        self.collapsed = False
+
+    def update(self, options: [str]):
+        self.options = self.options and options
+
+
 class WFC(Algorithm):
     neighbours_dict: dict
+    wfc_grid: [[WCFTile]]
 
-    def __init__(self, _map):
-        super().__init__(_map)
+    def __init__(self, _map, tile_types):
+        super().__init__(_map, tile_types)
         self.read_neighbours_dict(constant.neighbours_data_path)
+        self.till_end = constant.GRID_SIZE[0] * constant.GRID_SIZE[1]
+        self.wfc_grid = _map.grid.copy()
+        for i in range(len(self.wfc_grid)):
+            for j in range(len(self.wfc_grid[0])):
+                self.wfc_grid[i][j] = WCFTile(i, j, self.tile_types.tile_type_name_set)
+        self.tile_types = tile_types
 
-    def end_collapse(self):
-        pass
+    def end_collapse(self) -> bool:
+        return self.till_end == 0
 
-    def collapse_cell(self, x, y):
-        pass
+    def collapse_cell(self, cell: WCFTile):
+        cell.tile_type = self.find_best_option(cell.options)
+        cell.collapsed = True
+        self.till_end -= 1
 
-    def find_best(self):
-        pass
+    @staticmethod
+    def find_best_option(options: [str]) -> str:
+        return max(options, key=lambda x: x[1])
 
-    def update_near_collapsed(self, x, y):
-        pass
+    def find_best_cell(self) -> WCFTile:
+        return min(self.wfc_grid, key=lambda tile: len(tile.options))
+
+    def update_near_collapsed(self, cell: WCFTile):
+        x = cell.row
+        y = cell.col
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                # można zapisać inaczej
+                if not(i == 0 and j == 0):
+                    options = self.neighbours_dict[self.wfc_grid[x][y].tile_type][(i+1)*3+(j+1)]
+                    self.wfc_grid[x + i][y + j].update(options)
 
     def collapse_all(self):
-        pass
+        x = random.randint(0, len(self.wfc_grid))
+        y = random.randint(0, len(self.wfc_grid[0]))
+        cell = self.wfc_grid[x][y]
+        while self.end_collapse():
+            self.collapse_cell(cell)
+            self.update_near_collapsed(cell)
+            cell = self.find_best_cell()
 
     def read_neighbours_dict(self, neighbours_data_path):
         with open(neighbours_data_path, 'r') as file:
@@ -54,87 +97,9 @@ class WFC(Algorithm):
                 self.neighbours_dict[key] = neighbours
 
 
-class WCFTile:
-    pass
-
-
 class Alg2(Algorithm):
     pass
 
 
 class Alg3(Algorithm):
     pass
-
-#
-# class Cell:
-#     def __init__(self):
-#         self.collapsed = False
-#         self.type = CellTypes.blank
-#         self.options = [
-#             CellTypes.grass,
-#             CellTypes.water,
-#             CellTypes.wall,
-#             CellTypes.door,
-#             CellTypes.floor
-#         ]
-#
-#     def get_connection_list(self):
-#         if self.type == CellTypes.grass:
-#             return list([CellTypes.grass, CellTypes.water, CellTypes.wall])
-#         elif self.type == CellTypes.water:
-#             return list([CellTypes.grass, CellTypes.water])
-#         elif self.type == CellTypes.wall:
-#             return list([CellTypes.grass, CellTypes.door, CellTypes.wall, CellTypes.floor])
-#         elif self.type == CellTypes.door:
-#             return list([CellTypes.wall, CellTypes.floor, CellTypes.grass])
-#         elif self.type == CellTypes.floor:
-#             return list([CellTypes.wall, CellTypes.door, CellTypes.floor, CellTypes.floor, CellTypes.floor])
-#
-#
-# class Grid:
-#     def __init__(self):
-#         self.grid = [[Cell() for _ in range(grid_size)] for _ in range(grid_size)]
-#         self.end = grid_size * grid_size
-#
-#     def end_collapse(self):
-#         return self.end == 0
-#
-#     def collapse_cell(self, x, y):
-#         self.grid[x][y].type = self.grid[x][y].options[random.randint(0, len(self.grid[x][y].options) - 1)]
-#         self.grid[x][y].options = []
-#         self.grid[x][y].collapsed = True
-#         self.end -= 1
-#
-#     def find_best(self):
-#         min_ = cell_type_num
-#         best = []
-#         for i in range(0, grid_size):
-#             for j in range(0, grid_size):
-#                 if len(self.grid[i][j].options) < min_ and not self.grid[i][j].collapsed:
-#                     best.clear()
-#                     best.append((i, j))
-#                     min_ = len(self.grid[i][j].options)
-#                 elif len(self.grid[i][j].options) == min_:
-#                     best.append((i, j))
-#         return best[random.randint(0, len(best) - 1)]
-#
-#     def update_near_collapsed(self, x, y):
-#         arr = [(x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y)]
-#         for (i, j) in arr:
-#             if i in range(0, grid_size) and j in range(0, grid_size) and not self.grid[i][j].collapsed:
-#                 self.grid[i][j].options = list(set(self.grid[i][j].options) &
-#                                                set(self.grid[x][y].get_connection_list()))
-#                 # if len(self.grid[i][j].options) == 1:
-#                 #    self.collapse_cell(i, j)
-#
-#     def collapse_all(self):
-#         x = random.randint(0, grid_size - 1)
-#         y = random.randint(0, grid_size - 1)
-#         self.collapse_cell(x, y)
-#         self.update_near_collapsed(x, y)
-#
-#         while not self.end_collapse():
-#             (best_x, best_y) = self.find_best()
-#             self.collapse_cell(best_x, best_y)
-#             self.update_near_collapsed(best_x, best_y)
-#         return self.grid

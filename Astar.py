@@ -1,4 +1,5 @@
 from map_elements import Map
+import math
 
 
 def a_star_path(start: (int, int), target: (int, int), _map: Map) -> [(int, int)]:
@@ -48,7 +49,7 @@ def get_neighbors(current: (int, int), _map: Map) -> [(int, int)]:
 
 
 def heuristic(start: (int, int), target: (int, int)) -> float:
-    distance = abs(start[0] - target[0]) + abs(start[1] - target[1])
+    distance = math.sqrt(abs(start[0] - target[0])**2 + abs(start[1] - target[1])**2)
     return distance
 
 

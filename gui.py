@@ -26,24 +26,24 @@ class GUI:
 
         button_frame = tk.Frame(self.root, bg='gray', padx=10, pady=10)
 
-        listbox = tk.Listbox(button_frame, bg='grey', height=3)
-        button2 = tk.Button(button_frame, text="nowa mapa", command=self.button2_action, width=15)
-        button3 = tk.Button(button_frame, text="A star", command=self.button3_action, width=15)
-        button4 = tk.Button(button_frame, text="zapisz", command=self.button4_action, width=15)
+        self.listbox = tk.Listbox(button_frame, bg='grey', height=3)
+        button1 = tk.Button(button_frame, text="nowa mapa", command=self.button1_action, width=15)
+        button2 = tk.Button(button_frame, text="A star", command=self.button2_action, width=15)
+        button3 = tk.Button(button_frame, text="zapisz", command=self.button2_action, width=15)
 
         text = tk.StringVar()
         text.set("wynik: 0")
         score = tk.Label(button_frame, textvariable=text)
         score.pack()
 
-        listbox.insert(1, 'algorytm1')
-        listbox.insert(1, 'algorytm2')
-        listbox.insert(1, 'algorytm3')
-        listbox.pack(pady=5)
+        self.listbox.insert(1, 'algorytm1')
+        self.listbox.insert(1, 'algorytm2')
+        self.listbox.insert(1, 'algorytm3')
+        self.listbox.pack(pady=5)
 
+        button1.pack(pady=5)
         button2.pack(pady=5)
         button3.pack(pady=5)
-        button4.pack(pady=5)
 
         button_frame.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -51,7 +51,8 @@ class GUI:
         self.root.mainloop()
 
     def button1_action(self):
-        print("Button 1 clicked")
+        #alg = self.listbox.get??
+        #uruchom algorytm
         self.load_map_texture()
 
     def button2_action(self):
