@@ -85,3 +85,13 @@ class GUI:
                     )
 
                     self.image_references.append(tk_image)
+
+     # zmiana między oknami
+def change_to_build():
+    x.pack()
+    y.forget()
+
+
+def change_to_main():
+    y.pack()
+    x.forget()
