@@ -3,6 +3,13 @@ import constant as const
 
 from PIL import Image, ImageTk
 
+#trzeba z tego zrobić jedną klasę z gui bo teraz jest problem ze zmiennymi
+
+tile_selection: bool = False
+tile_position: (int, int) = None
+direction: int or None = None
+tiles = []
+tiles_neighbours = {}
 
 def back():
     print("back button pressed")
@@ -13,7 +20,7 @@ def save():
 
 
 def direction_button_action(value: int):
-    print("button: ", value)
+    pass
 
 
 direction_button_actions = {
@@ -42,8 +49,17 @@ dir_button_size = (6, 3)
 listbox_size = (int(button_size[0]*2.5)+1, dir_button_size[1]*4)
 
 
+
 def tile_clicked(event):
-    print(int(event.x / (TK_IMAGE.width() / 9)), int(event.y / (TK_IMAGE.height() / 8)))
+    x = int(event.x / (TK_IMAGE.width() / 9))
+    y = int(event.y / (TK_IMAGE.height() / 8))
+    if tile_selection:
+        tile_position = (x,y)
+        if tiles_neighbours.get(tile_position) is None:
+            tiles_neighbours[tile_position] = {}
+        return
+    elif direction is not None:
+        tiles_neighbours[tile_position][direction] = (x,y)
 
 
 # Frames
@@ -95,3 +111,14 @@ listbox.pack()
 canvas.create_image(250, 250, image=TK_IMAGE)
 canvas.bind('<Button-1>', tile_clicked)
 root.mainloop()
+
+
+def direction_button_action(value: int):
+    print("button: ", value)
+    if value == 4:
+        tile_selection = True
+        tile_position = None
+        direction = None
+    else:
+        direction = value
+
