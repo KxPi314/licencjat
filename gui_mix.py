@@ -1,30 +1,43 @@
 import tkinter as tk
-import constant as const
 from PIL import ImageTk, Image
+from map_elements import Map
+from textures_and_data import TileTypes
+import constant
+
+
+def build_button3():
+    print("Button 3 clicked")
 
 
 class Gui:
     # Edit values
     tile_selection: bool
-    tile_position: (int, int)
+    tile_name: str or None
     direction: int or None
     tiles: list
     tiles_neighbours: dict
     direction_button_actions: dict
     tk_image: Image
+    edit_canvas: tk.Canvas
 
     # Build values
+    image_references: list
+    build_canvas: tk.Canvas
 
-    def __init__(self):
+    def __init__(self, _map: Map, tile_types: TileTypes):
+        self.selection_rect = None
+        self._map = _map
+        self.tile_types = tile_types
+        self.image_references = []
         self.root: tk = tk.Tk()
         self.WINDOW_NAME = "Map_generation"
         self.root.title(self.WINDOW_NAME)
-        self.root.geometry("%sx%s" % (const.WINDOW_SIZE[0], const.WINDOW_SIZE[1]))
+        self.root.geometry("%sx%s" % (constant.WINDOW_SIZE[0], constant.WINDOW_SIZE[1]))
         self.build_frame = tk.Frame(self.root)
         self.edit_frame = tk.Frame(self.root)
         self.setup_build_frame()
         self.setup_edit_frame()
-        self.edit_frame.pack(fill=tk.BOTH, expand=True)
+        self.build_frame.pack(fill=tk.BOTH, expand=True)
         self.root.mainloop()
 
     def change_build_to_edit(self):
@@ -38,14 +51,11 @@ class Gui:
     # Build Frame functions
     def setup_build_frame(self):
 
-        # Values
-        image_references = []
-
         # Frames
         button_frame = tk.Frame(self.build_frame, bg='gray')
 
         # Widgets
-        canvas = tk.Canvas(self.build_frame, background='black')
+        self.build_canvas = tk.Canvas(self.build_frame, background='black')
 
         listbox = tk.Listbox(button_frame, bg='grey', height=3)
         listbox.insert(1, 'WFC')
@@ -54,7 +64,7 @@ class Gui:
 
         new_map_button = tk.Button(button_frame, text="new map", command=self.build_button1, width=15)
         a_star_button = tk.Button(button_frame, text="A star", command=self.build_button2, width=15)
-        save_button = tk.Button(button_frame, text="save", command=self.build_button3, width=15)
+        save_button = tk.Button(button_frame, text="save", command=build_button3, width=15)
         edit_button = tk.Button(button_frame, text="edit", command=self.change_build_to_edit, width=15)
 
         text = tk.StringVar()
@@ -62,7 +72,7 @@ class Gui:
         score = tk.Label(button_frame, textvariable=text)
 
         # Packing
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.build_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         button_frame.pack(side=tk.RIGHT, fill=tk.Y)
 
         new_map_button.pack()
@@ -77,43 +87,32 @@ class Gui:
         # uruchom algorytm
         self.build_load_map_texture()
 
-    def build_button2(self):
+    @staticmethod
+    def build_button2():
         print("Button 2 clicked")
 
-    def build_button3(self):
-        print("Button 3 clicked")
-
-    def build_button4(self):
-        print("Button 4 clicked")
-
     def build_load_map_texture(self):
-        pass
-    # def load_map_texture(self):
-    #     canvas_width = constant.GRID_SIZE[0] * constant.TILE_SIZE[0]
-    #     canvas_height = constant.GRID_SIZE[1] * constant.TILE_SIZE[1]
-    #     self.canvas.config(width=canvas_width, height=canvas_height)
-    #
-    #     for i in range(len(self._map.grid)):
-    #         for j in range(len(self._map.grid[0])):
-    #             if self._map.grid[i][j] is not None:
-    #                 pil_image = self.tile_types.tile_type_dict.get(self._map.grid[i][j].tile_type)
-    #                 resized_image = pil_image.resize(
-    #                     (constant.TILE_SIZE[0], constant.TILE_SIZE[1])
-    #                 )
-    #                 tk_image = ImageTk.PhotoImage(resized_image)
-    #                 self.canvas.create_image(
-    #                     j * constant.TILE_SIZE[0],
-    #                     i * constant.TILE_SIZE[1],
-    #                     anchor=tk.NW,
-    #                     image=tk_image
-    #                 )
-    #
-    #                 self.image_references.append(tk_image)
+        for i in range(len(self._map.grid)):
+            for j in range(len(self._map.grid[0])):
+                if self._map.grid[i][j] is not None:
+                    pil_image = self.tile_types.tile_type_dict.get(self._map.grid[i][j].tile_type)
+                    resized_image = pil_image.resize(
+                        (constant.TILE_SIZE[0], constant.TILE_SIZE[1])
+                    )
+                    tk_image = ImageTk.PhotoImage(resized_image)
+                    self.build_canvas.create_image(
+                        j * constant.TILE_SIZE[0],
+                        i * constant.TILE_SIZE[1],
+                        anchor=tk.NW,
+                        image=tk_image
+                    )
+
+                    self.image_references.append(tk_image)
 
     # Edit Frame functions
     def setup_edit_frame(self):
         self.tile_selection = False
-        self.tile_position = None
+        self.tile_name = None
         self.direction = None
         self.tiles = []
         self.tiles_neighbours = {}
@@ -130,6 +129,7 @@ class Gui:
         }
         img = Image.open('map_assets/v.3/Island_24x24.png')
         self.tk_image = ImageTk.PhotoImage(img.resize((500, 500)))
+        self.selection_rect = None
 
         # Values
         button_size = (10, 1)
@@ -154,8 +154,7 @@ class Gui:
                                 width=button_size[0],
                                 height=button_size[1])
 
-        canvas = tk.Canvas(self.edit_frame,
-                           background='Black')
+        self.edit_canvas = tk.Canvas(self.edit_frame, background='Black')
         listbox = tk.Listbox(main_frame,
                              width=listbox_size[0],
                              height=listbox_size[1])
@@ -179,7 +178,7 @@ class Gui:
 
         # Packing
 
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.edit_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         main_frame.pack()
         button_frame.pack()
         save_button.pack(side=tk.LEFT)
@@ -195,36 +194,44 @@ class Gui:
         listbox.pack()
 
         # loading img
-        canvas.create_image(250, 250, image=self.tk_image)
-        canvas.bind('<Button-1>', self.tile_clicked)
-
-    def edit_back(self):
-        print("back button pressed")
+        self.edit_canvas.create_image(250, 250, image=self.tk_image)
+        self.edit_canvas.bind('<Button-1>', self.tile_clicked)
 
     def edit_save(self):
-        print("sace button pressed")
+        print(self.tiles_neighbours)
 
     def direction_button_action(self, value: int):
-        print("button: ", value)
         # if center button pressed
         if value == 4:
+            print("selection mode")
             self.tile_selection = True
-            self.tile_position = None
+            self.tile_name = None
             self.direction = None
         else:
+            print("direction: ", value)
+            self.tile_selection = False
             self.direction = value
 
     def tile_clicked(self, event):
         x = int(event.x / (self.tk_image.width() / 9))
         y = int(event.y / (self.tk_image.height() / 8))
-        print(x, y)
-        # if tile_selection:
-        #     tile_position = (x,y)
-        #     if tiles_neighbours.get(tile_position) is None:
-        #         tiles_neighbours[tile_position] = {}
-        #     return
-        # elif direction is not None:
-        #     tiles_neighbours[tile_position][direction] = (x, y)
-
-
-g = Gui()
+        if self.tile_selection:
+            if self.selection_rect is not None:
+                self.edit_canvas.itemconfig(self.selection_rect, fill='orange', outline='', stipple='gray50')
+            self.selection_rect = self.edit_canvas.create_rectangle((self.tk_image.width() / 9) * x,
+                                                                    (self.tk_image.height() / 8) * y,
+                                                                    (self.tk_image.width() / 9) * (x + 1),
+                                                                    (self.tk_image.height() / 8) * (y + 1),
+                                                                    fill='red', outline='', stipple='gray50')
+            self.edit_canvas.move(self.selection_rect, 0, 0)
+            self.build_canvas.update()
+            self.build_canvas.update()
+            self.tile_name = str(x) + ',' + str(y)
+            print(self.tile_name, " selected")
+            if self.tiles_neighbours.get(self.tile_name) is None:
+                self.tiles_neighbours[self.tile_name] = [[] for _ in range(9)]
+            return
+        elif self.direction is not None and self.tile_name is not None:
+            print(x, y, " selected")
+            if str(x) + ',' + str(y) not in self.tiles_neighbours[self.tile_name][self.direction]:
+                self.tiles_neighbours[self.tile_name][self.direction].append(str(x) + ',' + str(y))
