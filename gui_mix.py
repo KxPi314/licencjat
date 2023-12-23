@@ -216,16 +216,12 @@ class Gui:
         x = int(event.x / (self.tk_image.width() / 9))
         y = int(event.y / (self.tk_image.height() / 8))
         if self.tile_selection:
-            if self.selection_rect is not None:
-                self.edit_canvas.itemconfig(self.selection_rect, fill='orange', outline='', stipple='gray50')
             self.selection_rect = self.edit_canvas.create_rectangle((self.tk_image.width() / 9) * x,
                                                                     (self.tk_image.height() / 8) * y,
                                                                     (self.tk_image.width() / 9) * (x + 1),
                                                                     (self.tk_image.height() / 8) * (y + 1),
                                                                     fill='red', outline='', stipple='gray50')
             self.edit_canvas.move(self.selection_rect, 0, 0)
-            self.build_canvas.update()
-            self.build_canvas.update()
             self.tile_name = str(x) + ',' + str(y)
             print(self.tile_name, " selected")
             if self.tiles_neighbours.get(self.tile_name) is None:
@@ -235,3 +231,5 @@ class Gui:
             print(x, y, " selected")
             if str(x) + ',' + str(y) not in self.tiles_neighbours[self.tile_name][self.direction]:
                 self.tiles_neighbours[self.tile_name][self.direction].append(str(x) + ',' + str(y))
+            else:
+                self.tiles_neighbours[self.tile_name][self.direction].remove(str(x) + ',' + str(y))
