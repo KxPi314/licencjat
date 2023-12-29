@@ -33,5 +33,3 @@ class TileTypes:
         for index, tile_data in enumerate(data):
             self.tile_type_dict[tile_data[0]] = (tile_data[1], tile_data[2], tile_textures[index])
             self.tile_type_name_set.add(tile_data[0])
-
-
