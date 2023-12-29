@@ -19,7 +19,7 @@ class Tile:
         self.difficult_terrain = difficult_terrain
 
     def update(self, options: [str]):
-        self.options = self.options and options
+        self.options = list(set(self.options) and set(options))
 
 
 class Map:

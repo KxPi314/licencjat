@@ -98,16 +98,15 @@ class Gui:
 
     def build_new_map(self):
         self.build_canvas.delete("all")
-        self.tile_types.tile_type_name_set = \
-            [x for x in self.tile_types.tile_type_name_set if x in self.tiles_neighbours]
+        name_set = self.tile_types.tile_type_name_set and list(self.tiles_neighbours.keys())
         self.build_get_grid_size()
-        wfc = algorithms.WFC(self._map, self.tile_types, self.grid_size)
+        wfc = algorithms.WFC(self._map, name_set, self.grid_size, self.tiles_neighbours)
         wfc.neighbours_dict = self.tiles_neighbours
         self.build_load_map_texture()
 
     @staticmethod
     def build_a_star():
-        print("Button 2 clicked")
+        pass
 
     def build_save(self):
         if self.map_image is not None:
@@ -126,10 +125,11 @@ class Gui:
         for i in range(self.grid_size[0]):
             for j in range(self.grid_size[1]):
                 if self._map.grid[i][j].tile_type_name is not None:
-                    tile_image = self.tile_types.tile_type_dict.get(self._map.grid[i][j].tile_type_name)[2]
-                    tile_image = tile_image.resize((constant.TILE_SIZE[0], constant.TILE_SIZE[1]))
-                    if tile_image is not None:
-                        map_image.paste(tile_image, (constant.TILE_SIZE[0]*i, constant.TILE_SIZE[1]*j))
+                    if self.tile_types.tile_type_dict.get(self._map.grid[i][j].tile_type_name) is not None:
+                        tile_image = self.tile_types.tile_type_dict.get(self._map.grid[i][j].tile_type_name)[2]
+                        tile_image = tile_image.resize((constant.TILE_SIZE[0], constant.TILE_SIZE[1]))
+                        if tile_image is not None:
+                            map_image.paste(tile_image, (constant.TILE_SIZE[0]*i, constant.TILE_SIZE[1]*j))
         if self.grid_size[0] > self.grid_size[1]:
             self.map_image = map_image.resize(
                 (constant.CANVAS_SIZE[0],
@@ -233,7 +233,7 @@ class Gui:
         self.edit_canvas.bind('<Button-1>', self.tile_clicked)
 
     def edit_save(self):
-        print(self.neighbours)
+        print(self.tiles_neighbours)
 
     def direction_button_action(self, value: int):
         if self.direction is not None:
@@ -246,7 +246,10 @@ class Gui:
             self.direction = None
         else:
             self.tile_selection = False
-            self.direction = value
+            if value<4:
+                self.direction = value
+            else:
+                self.direction = value-1
             for elem in self.neighbours[self.direction]:
                 self.edit_canvas.move(elem)
 
@@ -254,7 +257,7 @@ class Gui:
         x = int(event.x / (self.tk_map_image.width() / 9))
         y = int(event.y / (self.tk_map_image.height() / 8))
         if self.tile_selection:
-            self.neighbours = [[] for _ in range(9)]
+            self.neighbours = [[] for _ in range(8)]
             self.edit_canvas.delete(self.selection_rect)
             self.selection_rect = self.edit_canvas.create_rectangle((self.tk_map_image.width() / 9) * x,
                                                                     (self.tk_map_image.height() / 8) * y,
@@ -264,7 +267,7 @@ class Gui:
             self.edit_canvas.move(self.selection_rect, 0, 0)
             self.tile_name = str(x) + ',' + str(y)
             if self.tiles_neighbours.get(self.tile_name) is None:
-                self.tiles_neighbours[self.tile_name] = [[] for _ in range(9)]
+                self.tiles_neighbours[self.tile_name] = [[] for _ in range(8)]
             return
         elif self.direction is not None and self.tile_name is not None:
             rec = self.edit_canvas.create_rectangle((self.tk_map_image.width() / 9) * x,
