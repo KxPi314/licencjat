@@ -1,35 +1,27 @@
 import random
-from map_elements import Map, Tile
-from textures_and_data import TileTypes
+from map_elements import Tile
 
 
-class Algorithm:
-    _map: Map
-    tile_types: TileTypes
-
-    def __init__(self, _map: Map, name_set, grid_size: (int, int)):
-        self._map = _map
-        self.name_set = name_set
-        self.grid_size = grid_size
-
-    def generate_map_grid(self) -> [[Tile]]:
-        pass
-
-
-class WFC(Algorithm):
+class WFC:
     neighbours_dict: dict
     grid: [[Tile]]
 
     def __init__(self, _map, name_set, grid_size, neighbours_dict):
-        super().__init__(_map, name_set, grid_size)
+        self._map = _map
+        self.name_set = name_set
+        self.grid_size = grid_size
+
         self.neighbours_dict = neighbours_dict
         self.till_end = self.grid_size[0] * self.grid_size[1]
         self.grid = _map.grid.copy()
         self.bonus_tile = Tile(0, 0, name_set)
+        arr = list(name_set)
         for i in range(self.grid_size[0]):
             for j in range(self.grid_size[1]):
                 self.grid[i][j] = Tile(i, j, name_set)
-        self.collapse_all()
+                self.grid[i][j].tile_type_name = random.choice(name_set)
+                self.grid[i][j].collapsed = True
+        #self.collapse_all()
         _map.grid = self.grid
 
     def collapse_all(self):

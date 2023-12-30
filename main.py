@@ -1,5 +1,4 @@
 from gui import Gui
-from map_elements import Map
 from textures_and_data import TileTypes
 
 if __name__ == '__main__':

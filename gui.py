@@ -14,11 +14,12 @@ class Gui:
     tiles: list
     tiles_neighbours: dict
     direction_button_actions: dict
-    tk_map_image: Image
+    tk_asset_image: Image
     edit_canvas: tk.Canvas
     neighbours: list
 
     # Build values
+    tk_map_image = Image
     build_canvas: tk.Canvas
     grid_size: (int, int)
     grid_width_box: tk.Text
@@ -163,7 +164,7 @@ class Gui:
             8: lambda: self.direction_button_action(8),
         }
         img = Image.open('map_assets/v.3/Island_24x24.png')
-        self.tk_map_image = ImageTk.PhotoImage(img.resize((500, 500)))
+        self.tk_asset_image = ImageTk.PhotoImage(img.resize((500, 500)))
         self.selection_rect = None
 
         # Values
@@ -229,7 +230,7 @@ class Gui:
         listbox.pack()
 
         # loading img
-        self.edit_canvas.create_image(250, 250, image=self.tk_map_image)
+        self.edit_canvas.create_image(250, 250, image=self.tk_asset_image)
         self.edit_canvas.bind('<Button-1>', self.tile_clicked)
 
     def edit_save(self):
@@ -254,15 +255,15 @@ class Gui:
                 self.edit_canvas.move(elem)
 
     def tile_clicked(self, event):
-        x = int(event.x / (self.tk_map_image.width() / 9))
-        y = int(event.y / (self.tk_map_image.height() / 8))
+        x = int(event.x / (self.tk_asset_image.width() / 9))
+        y = int(event.y / (self.tk_asset_image.height() / 8))
         if self.tile_selection:
             self.neighbours = [[] for _ in range(8)]
             self.edit_canvas.delete(self.selection_rect)
-            self.selection_rect = self.edit_canvas.create_rectangle((self.tk_map_image.width() / 9) * x,
-                                                                    (self.tk_map_image.height() / 8) * y,
-                                                                    (self.tk_map_image.width() / 9) * (x + 1),
-                                                                    (self.tk_map_image.height() / 8) * (y + 1),
+            self.selection_rect = self.edit_canvas.create_rectangle((self.tk_asset_image.width() / 9) * x,
+                                                                    (self.tk_asset_image.height() / 8) * y,
+                                                                    (self.tk_asset_image.width() / 9) * (x + 1),
+                                                                    (self.tk_asset_image.height() / 8) * (y + 1),
                                                                     fill='red', outline='', stipple='gray50')
             self.edit_canvas.move(self.selection_rect, 0, 0)
             self.tile_name = str(x) + ',' + str(y)
@@ -270,10 +271,10 @@ class Gui:
                 self.tiles_neighbours[self.tile_name] = [[] for _ in range(8)]
             return
         elif self.direction is not None and self.tile_name is not None:
-            rec = self.edit_canvas.create_rectangle((self.tk_map_image.width() / 9) * x,
-                                                    (self.tk_map_image.height() / 8) * y,
-                                                    (self.tk_map_image.width() / 9) * (x + 1),
-                                                    (self.tk_map_image.height() / 8) * (y + 1),
+            rec = self.edit_canvas.create_rectangle((self.tk_asset_image.width() / 9) * x,
+                                                    (self.tk_asset_image.height() / 8) * y,
+                                                    (self.tk_asset_image.width() / 9) * (x + 1),
+                                                    (self.tk_asset_image.height() / 8) * (y + 1),
                                                     fill='green', outline='', stipple='gray50')
             self.edit_canvas.move(rec, 0, 0)
             self.neighbours[self.direction].append(rec)
