@@ -50,19 +50,19 @@ class TileType:
         if direction == Direction.Up:
             result = self.puzzle_shape[0]
         elif direction == Direction.Down:
-            result = self.puzzle_shape[1]
+            result = self.puzzle_shape[-1]
         elif direction == Direction.Left:
             result = self.puzzle_shape[:, 0]
         elif direction == Direction.Right:
-            result = self.puzzle_shape[:, 1]
+            result = self.puzzle_shape[:, -1]
         elif direction == Direction.LeftUP:
             result = self.puzzle_shape[0, 0]
         elif direction == Direction.RightUp:
-            result = self.puzzle_shape[0, 1]
+            result = self.puzzle_shape[0, -1]
         elif direction == Direction.LeftDown:
-            result = self.puzzle_shape[1, 0]
+            result = self.puzzle_shape[-1, 0]
         else:
-            result = self.puzzle_shape[1, 1]
+            result = self.puzzle_shape[-1, -1]
         return result
 
 

@@ -60,7 +60,7 @@ class Wfc:
     def update_near_collapsed(self, row, col):
         for i in range(-1, 2):
             for j in range(-1, 2):
-                if not(i == 0 and j == 0) and 0 < row+i < self._map.grid_size[0] and 0 < col+j < self._map.grid_size[1]:
+                if not(i == 0 and j == 0) and 0 <= row+i < self._map.grid_size[0] and 0 <= col+j < self._map.grid_size[1]:
                     if not self._map.grid[row+i][col+j].collapsed:
                         direction = Direction.x_y_to_direction(i, j)
                         if self._map.grid[row][col].tile_type is None:
@@ -94,8 +94,6 @@ class Wfc:
                         self.t_types,
                         tile_type=random.choice(up)
                     )
-    # dziala tylko krawędzie zjebane nie wiem czemu
-    # żeby używać innych obrazóq muszę zmienić wymiary obrazka
 
     def build_neighbors_dict(self, t_types: [TileType]):
         for current_type in t_types:

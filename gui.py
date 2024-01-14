@@ -1,4 +1,6 @@
+import random
 import tkinter as tk
+
 from PIL import ImageTk, Image
 from map_elements import Map, TileType
 import constant
@@ -7,6 +9,7 @@ import numpy as np
 
 
 class Gui:
+    tile_bitmap_shape: (int, int)
     tile_img_dict: dict
 
     # Edit values
@@ -40,6 +43,7 @@ class Gui:
         self.window_height = self.root.winfo_height()
         self.t_types = []
         self.tile_img_dict = {}
+        self.tile_bitmap_shape = (3, 3)
 
         self.build_frame = tk.Frame(self.root)
         self.edit_frame = tk.Frame(self.root)
@@ -90,12 +94,12 @@ class Gui:
         self.build_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         button_frame.pack(side=tk.RIGHT, fill=tk.Y)
 
-        height_frame.pack()
         width_frame.pack()
+        height_frame.pack()
         grid_height_label.pack(side=tk.LEFT)
         grid_width_label.pack(side=tk.LEFT)
-        self.grid_height_box.pack()
         self.grid_width_box.pack()
+        self.grid_height_box.pack()
         new_map_button.pack()
         a_star_button.pack()
         save_button.pack()
@@ -108,7 +112,6 @@ class Gui:
             self.build_get_grid_size()
             wfc = Wfc(self._map, self.t_types)
             wfc.collapse_all()
-            # wfc.draw_test()
             self.build_load_map_texture()
 
     def build_a_star(self):
@@ -122,7 +125,7 @@ class Gui:
         x = self.grid_width_box.get("1.0", tk.END).strip()
         y = self.grid_height_box.get("1.0", tk.END).strip()
         if y.isdecimal() and x.isdecimal():
-            self.grid_size = (int(x), int(y))
+            self.grid_size = (int(y), int(x))
             self._map = Map(self.grid_size)
         return self.grid_size
 
@@ -130,33 +133,40 @@ class Gui:
         map_image = Image.new(
             "RGB",
             (
-                constant.TILE_SIZE[0] * self.grid_size[0],
-                constant.TILE_SIZE[1] * self.grid_size[1]
+                constant.TILE_SIZE[1] * self.grid_size[1],
+                constant.TILE_SIZE[0] * self.grid_size[0]
             )
         )
-        for i in range(1, self.grid_size[0]):
-            for j in range(1, self.grid_size[1]):
+        for i in range(0, self.grid_size[0]):
+            for j in range(0, self.grid_size[1]):
                 if self._map.grid[i][j] is not None and self._map.grid[i][j].tile_type is not None:
                     tile_image = self.tile_img_dict[self._map.grid[i][j].tile_type.img_id]
                     tile_image = tile_image.resize((constant.TILE_SIZE[0], constant.TILE_SIZE[1]))
                     map_image.paste(tile_image, (constant.TILE_SIZE[0] * j, constant.TILE_SIZE[1] * i))
-        if self.grid_size[0] > self.grid_size[1]:
-            self.map_image = map_image.resize(
-                (constant.CANVAS_SIZE[0],
-                 int(constant.CANVAS_SIZE[1] * (self.grid_size[1] / self.grid_size[0])))
-            )
+
+        original_width, original_height = map_image.size
+        ratio = original_width / original_height
+
+        canvas_width = self.edit_canvas.winfo_width()
+        canvas_height = self.edit_canvas.winfo_height()
+
+        if canvas_width / canvas_height > ratio:
+            new_height = canvas_height
+            new_width = int(canvas_height * ratio)
         else:
-            self.map_image = map_image.resize(
-                (int(constant.CANVAS_SIZE[0] * (self.grid_size[0] / self.grid_size[1])),
-                 constant.CANVAS_SIZE[1])
-            )
+            new_width = canvas_width
+            new_height = int(canvas_width / ratio)
+
+        self.map_image = map_image.resize((new_width, new_height), box=(0, 0, map_image.width, map_image.height))
+
         self.tk_map_image = ImageTk.PhotoImage(self.map_image)
         self.build_canvas.create_image(0, 0, anchor=tk.NW, image=self.tk_map_image)
+        self.build_canvas.update_idletasks()
 
     # Edit Frame functions
     def setup_edit_frame(self):
         self.edit_img_scale = 2
-        self.asset_image = Image.open('map_assets/v.3/Dungeon_24x24.png')
+        self.asset_image = Image.open('map_assets/v.3/Island_24x24.png')
         self.tk_asset_image = ImageTk.PhotoImage(
             self.asset_image.resize((
                 self.asset_image.width * self.edit_img_scale,
@@ -174,39 +184,41 @@ class Gui:
         # Frames
         main_frame = tk.Frame(self.edit_frame)
         button_frame = tk.Frame(main_frame)
+        bitmap_frame = tk.Frame(main_frame)
 
         # Widgets
         save_button = tk.Button(master=button_frame,
                                 command=self.edit_save,
                                 text='save',
-                                width=button_size[0],
+                                width=7,
                                 height=button_size[1])
         back_button = tk.Button(master=button_frame,
                                 command=self.change_edit_to_build,
                                 text='back',
-                                width=button_size[0],
+                                width=7,
                                 height=button_size[1])
 
         select_button = tk.Button(master=main_frame,
                                   command=self.edit_select_tile,
                                   text='select tiles',
-                                  width=button_size[0] * 2,
+                                  width=16,
                                   height=button_size[1])
 
         bitmap_button = tk.Button(master=main_frame,
                                   command=self.edit_bitmap,
                                   text='bitmap',
-                                  width=button_size[0] * 2,
+                                  width=16,
                                   height=button_size[1])
 
         properties_button = tk.Button(master=main_frame,
                                       command=self.edit_properties,
                                       text='properties',
-                                      width=button_size[0] * 2,
+                                      width=16,
                                       height=button_size[1])
 
-        self.bitmap_id_input = tk.Text(master=main_frame,
-                                       width=button_size[0] * 2,
+        bitmap_id_label = tk.Label(bitmap_frame, text="id:", width=2, height=1)
+        self.bitmap_id_input = tk.Text(master=bitmap_frame,
+                                       width=12,
                                        height=button_size[1])
 
         self.edit_canvas = tk.Canvas(self.edit_frame, background='Black')
@@ -219,7 +231,9 @@ class Gui:
         back_button.pack()
         select_button.pack()
         bitmap_button.pack()
+        bitmap_id_label.pack(side=tk.LEFT)
         self.bitmap_id_input.pack()
+        bitmap_frame.pack()
         properties_button.pack()
 
         # loading img
@@ -230,6 +244,8 @@ class Gui:
         )
         self.edit_canvas.bind('<Button-1>', self.tile_clicked)
 
+
+# fix to (3*3)
     def edit_save(self):
         if self.selected_tiles != {}:
             self.tile_img_dict = {}
@@ -259,7 +275,7 @@ class Gui:
                 # Check if each corner is in selected_bitmap
                 for x in self.selected_bitmap.keys():
                     if (x[0], x[1]) == top_left:
-                        position = (x[0], x[1], x[0]+self.edit_tile_size[1]/2, x[1]+self.edit_tile_size[1]/2)
+                        position = (x[0], x[1], x[0] + self.edit_tile_size[1] / 2, x[1] + self.edit_tile_size[1] / 2)
                         top_left_bit = self.selected_bitmap[position][1]
                     elif (x[2], x[1]) == top_right:
                         position = (x[2] - self.edit_tile_size[0] / 2, x[1], x[2], x[1] + self.edit_tile_size[1] / 2)
@@ -277,13 +293,9 @@ class Gui:
                     [top_left_bit, top_right_bit],
                     [bottom_left_bit, bottom_right_bit]
                 ])
-                print(puzzle_shape)
+
                 t_type = TileType(index, puzzle_shape)
                 self.t_types.append(t_type)
-
-            self.selected_tiles = {}
-            self.selected_bitmap = {}
-            self.bitmap_color_id = {}
 
     def edit_select_tile(self):
         self.edit_canvas.delete("all")
@@ -339,15 +351,13 @@ class Gui:
     def edit_get_bitmap_color(self, color_id: int) -> str:
         if color_id in self.bitmap_color_id.keys():
             return self.bitmap_color_id[color_id]
-
-        text_input = self.bitmap_id_input.get("1.0", tk.END).strip()
-        if text_input.isdecimal():
-            new_color = "#"+str(color_id)+"1212"
-            self.bitmap_color_id[color_id] = new_color
-            return new_color
+        hex_numbers = [str(hex(random.randint(17, 255))[2:]) for _ in range(3)]
+        new_color = "#" + hex_numbers[0] + hex_numbers[1] + hex_numbers[2]
+        self.bitmap_color_id[color_id] = new_color
+        return new_color
 
     def tile_clicked(self, event):
-        self.edit_tile_set_size = (15, 7)
+        self.edit_tile_set_size = (9, 8)
         self.edit_tile_size = (
             (self.tk_asset_image.width() / self.edit_tile_set_size[0]),
             (self.tk_asset_image.height() / self.edit_tile_set_size[1])
@@ -374,6 +384,7 @@ class Gui:
                         width=2
                     )
                     self.selected_tiles[rect_position] = rect_id
+            # fix (3*3)
             if self.edit_work_state == "bitmap" and self.bitmap_id_input.get("1.0", tk.END).strip().isdecimal():
                 half_tile_size = (self.edit_tile_size[0] / 2, self.edit_tile_size[1] / 2)
                 x = int(event.x / (half_tile_size[0]))
