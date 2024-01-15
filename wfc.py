@@ -14,6 +14,8 @@ class Wfc:
         self.collapse_counter = self._map.grid_size[0] * self._map.grid_size[1]
         self._map.grid = [[Tile(row, col, t_types) for col in range(self._map.grid_size[1])] for row in
                           range(self._map.grid_size[0])]
+    def define_starting_platforms(self):
+        pass
 
     def collapse_all(self):
         x = random.randint(0, self._map.grid_size[0]-1)

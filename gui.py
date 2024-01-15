@@ -49,10 +49,11 @@ class Gui:
         self.build_frame = tk.Frame(self.root)
         self.edit_frame = tk.Frame(self.root)
 
+        self.grid_size = (10, 18)
+
         self.setup_build_frame()
         self.setup_edit_frame()
 
-        self.grid_size = (10, 10)
         self._map = Map(self.grid_size)
 
         self.build_frame.pack(fill=tk.BOTH, expand=True)
@@ -90,6 +91,8 @@ class Gui:
         text = tk.StringVar()
         text.set("score: 0")
         score = tk.Label(button_frame, textvariable=text)
+        self.grid_width_box.insert("1.0", str(self.grid_size[1]))
+        self.grid_height_box.insert("1.0", str(self.grid_size[0]))
 
         # Packing
         self.build_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -253,7 +256,6 @@ class Gui:
         checkbox_frame.pack()
         self.edit_id_list.pack()
         properties_button.pack()
-
 
         # loading img
         self.edit_canvas.create_image(
