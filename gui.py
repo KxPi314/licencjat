@@ -1,6 +1,5 @@
 import random
 import tkinter as tk
-
 from PIL import ImageTk, Image
 from map_elements import Map, TileType
 import constant
@@ -9,7 +8,6 @@ import numpy as np
 
 
 class Gui:
-    tile_bitmap_shape: (int, int)
     tile_img_dict: dict
 
     # Edit values
@@ -26,6 +24,9 @@ class Gui:
     edit_tile_set_size: (int, int)
     edit_tile_size: (float, float)
     t_types: [TileType]
+    checkbox_var: tk.IntVar
+    tile_bitmap_shape: (int, int)
+    edit_id_list: tk.Listbox
 
     # Build values
     map_image = Image
@@ -43,7 +44,7 @@ class Gui:
         self.window_height = self.root.winfo_height()
         self.t_types = []
         self.tile_img_dict = {}
-        self.tile_bitmap_shape = (3, 3)
+        self.tile_bitmap_shape = (2, 2)
 
         self.build_frame = tk.Frame(self.root)
         self.edit_frame = tk.Frame(self.root)
@@ -180,11 +181,14 @@ class Gui:
         self.selected_tiles = {}
         self.selected_bitmap = {}
         self.bitmap_color_id = {}
+        self.checkbox_var = tk.IntVar()
+        self.checkbox_var.set(2)
 
         # Frames
         main_frame = tk.Frame(self.edit_frame)
         button_frame = tk.Frame(main_frame)
         bitmap_frame = tk.Frame(main_frame)
+        checkbox_frame = tk.Frame(main_frame)
 
         # Widgets
         save_button = tk.Button(master=button_frame,
@@ -221,6 +225,16 @@ class Gui:
                                        width=12,
                                        height=button_size[1])
 
+        bitmap_shape_check_3_3 = tk.Checkbutton(checkbox_frame, text='3/3',
+                                                command=self.edit_bitmap_shape, variable=self.checkbox_var,
+                                                onvalue=3, offvalue=2)
+
+        bitmap_shape_check_2_2 = tk.Checkbutton(checkbox_frame, text='2/2',
+                                                command=self.edit_bitmap_shape, variable=self.checkbox_var,
+                                                onvalue=2, offvalue=3)
+
+        self.edit_id_list = tk.Listbox(main_frame, width=20)
+
         self.edit_canvas = tk.Canvas(self.edit_frame, background='Black')
         # Packing
 
@@ -234,7 +248,12 @@ class Gui:
         bitmap_id_label.pack(side=tk.LEFT)
         self.bitmap_id_input.pack()
         bitmap_frame.pack()
+        bitmap_shape_check_3_3.pack()
+        bitmap_shape_check_2_2.pack()
+        checkbox_frame.pack()
+        self.edit_id_list.pack()
         properties_button.pack()
+
 
         # loading img
         self.edit_canvas.create_image(
@@ -244,8 +263,6 @@ class Gui:
         )
         self.edit_canvas.bind('<Button-1>', self.tile_clicked)
 
-
-# fix to (3*3)
     def edit_save(self):
         if self.selected_tiles != {}:
             self.tile_img_dict = {}
@@ -262,37 +279,69 @@ class Gui:
                 )
 
                 self.tile_img_dict[index] = tile_texture
+                top_b = (left + self.edit_tile_size[0] / 3, up)
+                left_b = (left, up + self.edit_tile_size[1] / 3)
+                right_b = (right, up + self.edit_tile_size[1] / 3)
+                bottom_b = (left + self.edit_tile_size[0] / 3, down)
 
                 top_left = (left, up)
                 top_right = (right, up)
                 bottom_left = (left, down)
                 bottom_right = (right, down)
 
+                # for (3/3)
+                top_bit = False
+                left_bit = False
+                right_bit = False
+                bottom_bit = False
+
                 top_left_bit = False
                 top_right_bit = False
                 bottom_left_bit = False
                 bottom_right_bit = False
+
+                puzzle_shape = np.zeros(self.tile_bitmap_shape)
+
                 # Check if each corner is in selected_bitmap
                 for x in self.selected_bitmap.keys():
-                    if (x[0], x[1]) == top_left:
-                        position = (x[0], x[1], x[0] + self.edit_tile_size[1] / 2, x[1] + self.edit_tile_size[1] / 2)
-                        top_left_bit = self.selected_bitmap[position][1]
-                    elif (x[2], x[1]) == top_right:
-                        position = (x[2] - self.edit_tile_size[0] / 2, x[1], x[2], x[1] + self.edit_tile_size[1] / 2)
-                        top_right_bit = self.selected_bitmap[position][1]
-                    elif (x[0], x[3]) == bottom_left:
-                        position = (x[0], x[3] - self.edit_tile_size[1] / 2, x[0] + self.edit_tile_size[0] / 2, x[3])
-                        bottom_left_bit = self.selected_bitmap[position][1]
-                    elif (x[2], x[3]) == bottom_right:
-                        position = (x[2] - self.edit_tile_size[0] / 2, x[3] - self.edit_tile_size[1] / 2, x[2], x[3])
-                        bottom_right_bit = self.selected_bitmap[position][1]
+                    if self.tile_bitmap_shape == (2, 2):
+                        if (x[0], x[1]) == top_left:
+                            top_left_bit = self.selected_bitmap[x][1]
+                        elif (x[2], x[1]) == top_right:
+                            top_right_bit = self.selected_bitmap[x][1]
+                        elif (x[0], x[3]) == bottom_left:
+                            bottom_left_bit = self.selected_bitmap[x][1]
+                        elif (x[2], x[3]) == bottom_right:
+                            bottom_right_bit = self.selected_bitmap[x][1]
+                    if self.tile_bitmap_shape == (3, 3):
+                        if (x[0], x[1]) == top_left:
+                            top_left_bit = self.selected_bitmap[x][1]
+                        elif (x[2], x[1]) == top_right:
+                            top_right_bit = self.selected_bitmap[x][1]
+                        elif (x[0], x[3]) == bottom_left:
+                            bottom_left_bit = self.selected_bitmap[x][1]
+                        elif (x[2], x[3]) == bottom_right:
+                            bottom_right_bit = self.selected_bitmap[x][1]
+                        elif (x[0], x[1]) == top_b:
+                            top_bit = self.selected_bitmap[x][1]
+                        elif (x[0], x[1]) == left_b:
+                            left_bit = self.selected_bitmap[x][1]
+                        elif (x[2], x[1]) == right_b:
+                            right_bit = self.selected_bitmap[x][1]
+                        elif (x[0], x[3]) == bottom_b:
+                            bottom_bit = self.selected_bitmap[x][1]
 
-                # Create a TileType object and append it to t_types
-
-                puzzle_shape = np.array([
-                    [top_left_bit, top_right_bit],
-                    [bottom_left_bit, bottom_right_bit]
-                ])
+                if self.tile_bitmap_shape == (2, 2):
+                    puzzle_shape = np.array([
+                        [top_left_bit, top_right_bit],
+                        [bottom_left_bit, bottom_right_bit]
+                    ])
+                elif self.tile_bitmap_shape == (3, 3):
+                    puzzle_shape = np.array([
+                        [top_left_bit, top_bit, top_right_bit],
+                        [left_bit, 0, right_bit],
+                        [bottom_left_bit, bottom_bit, bottom_right_bit]
+                    ])
 
                 t_type = TileType(index, puzzle_shape)
                 self.t_types.append(t_type)
@@ -345,8 +394,20 @@ class Gui:
 
     def edit_properties(self):
         self.edit_canvas.delete("all")
-        self.edit_canvas.create_image(250, 250, image=self.tk_asset_image)
+        self.edit_canvas.create_image(
+            self.tk_asset_image.width() / 2,
+            self.tk_asset_image.height() / 2,
+            image=self.tk_asset_image
+        )
         self.edit_work_state = "properties"
+
+    def edit_bitmap_shape(self):
+        if self.checkbox_var.get() == 3:
+            self.tile_bitmap_shape = (3, 3)
+            print(self.tile_bitmap_shape)
+        else:
+            self.tile_bitmap_shape = (2, 2)
+            print(self.tile_bitmap_shape)
 
     def edit_get_bitmap_color(self, color_id: int) -> str:
         if color_id in self.bitmap_color_id.keys():
@@ -354,6 +415,8 @@ class Gui:
         hex_numbers = [str(hex(random.randint(17, 255))[2:]) for _ in range(3)]
         new_color = "#" + hex_numbers[0] + hex_numbers[1] + hex_numbers[2]
         self.bitmap_color_id[color_id] = new_color
+        self.edit_id_list.insert(0, str(color_id)+": "+new_color)
+        self.edit_id_list.itemconfig(0, {'fg': new_color})
         return new_color
 
     def tile_clicked(self, event):
@@ -386,15 +449,18 @@ class Gui:
                     self.selected_tiles[rect_position] = rect_id
             # fix (3*3)
             if self.edit_work_state == "bitmap" and self.bitmap_id_input.get("1.0", tk.END).strip().isdecimal():
-                half_tile_size = (self.edit_tile_size[0] / 2, self.edit_tile_size[1] / 2)
-                x = int(event.x / (half_tile_size[0]))
-                y = int(event.y / (half_tile_size[1]))
+                bit_tile_size = (
+                    self.edit_tile_size[0] / self.tile_bitmap_shape[0],
+                    self.edit_tile_size[1] / self.tile_bitmap_shape[1]
+                )
+                x = int(event.x / (bit_tile_size[0]))
+                y = int(event.y / (bit_tile_size[1]))
 
                 rect_position = (
-                    x * half_tile_size[0],
-                    y * half_tile_size[1],
-                    x * half_tile_size[0] + half_tile_size[0],
-                    y * half_tile_size[1] + half_tile_size[1]
+                    x * bit_tile_size[0],
+                    y * bit_tile_size[1],
+                    x * bit_tile_size[0] + bit_tile_size[0],
+                    y * bit_tile_size[1] + bit_tile_size[1]
                 )
                 if rect_position in self.selected_bitmap.keys():
                     self.edit_canvas.delete(self.selected_bitmap.get(rect_position)[0])
