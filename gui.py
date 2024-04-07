@@ -1,6 +1,8 @@
 import random
 import tkinter as tk
 from PIL import ImageTk, Image
+
+import Astar
 from map_elements import Map, TileType
 import constant
 from wfc import Wfc
@@ -18,6 +20,7 @@ class Gui:
     edit_work_state: str
     tile_img_size: (int, int)
     selected_tiles: dict
+    properties_walkable: dict
     selected_bitmap: dict
     bitmap_id_input: tk.Text
     bitmap_color_id = dict
@@ -119,7 +122,20 @@ class Gui:
             self.build_load_map_texture()
 
     def build_a_star(self):
-        pass
+        try:
+            start = (0, 0)
+            target = (self._map.grid_size[0] - 1, self._map.grid_size[1] - 1)
+            path = Astar.a_star_path(start, target, self._map)
+            scale = (self.map_image.size[0] / self.grid_size[1], self.map_image.size[1] / self.grid_size[0])
+            offset = (self.map_image.size[0] / self.grid_size[1] / 2, self.map_image.size[1] / self.grid_size[0] / 2)
+            for index, element in enumerate(path):
+                if index + 1 < len(path):
+                    first_point = (element[1] * scale[0] + offset[0], element[0] * scale[1] + offset[1])
+                    second_point = (
+                        path[index + 1][1] * scale[0] + offset[0], path[index + 1][0] * scale[1] + offset[1])
+                    self.build_canvas.create_line(first_point, second_point)
+        except AttributeError:
+            print("A* Error")
 
     def build_save(self):
         if self.map_image is not None:
@@ -182,6 +198,7 @@ class Gui:
         self.edit_work_state = "select_tile"
         self.tile_img_size = (24, 24)
         self.selected_tiles = {}
+        self.properties_walkable = {}
         self.selected_bitmap = {}
         self.bitmap_color_id = {}
         self.checkbox_var = tk.IntVar()
@@ -345,7 +362,10 @@ class Gui:
                         [bottom_left_bit, bottom_bit, bottom_right_bit]
                     ])
 
-                t_type = TileType(index, puzzle_shape)
+                walkable = False
+                if tile_pos in self.properties_walkable.keys():
+                    walkable = True
+                t_type = TileType(index, puzzle_shape, walkable)
                 self.t_types.append(t_type)
 
     def edit_select_tile(self):
@@ -401,15 +421,22 @@ class Gui:
             self.tk_asset_image.height() / 2,
             image=self.tk_asset_image
         )
+        for tile in self.properties_walkable:
+            new_id = self.edit_canvas.create_rectangle(
+                tile,
+                outline="grey",
+                fill="green",
+                stipple="gray50",
+                width=2
+            )
+            self.properties_walkable[tile] = new_id
         self.edit_work_state = "properties"
 
     def edit_bitmap_shape(self):
         if self.checkbox_var.get() == 3:
             self.tile_bitmap_shape = (3, 3)
-            print(self.tile_bitmap_shape)
         else:
             self.tile_bitmap_shape = (2, 2)
-            print(self.tile_bitmap_shape)
 
     def edit_get_bitmap_color(self, color_id: int) -> str:
         if color_id in self.bitmap_color_id.keys():
@@ -417,7 +444,7 @@ class Gui:
         hex_numbers = [str(hex(random.randint(17, 255))[2:]) for _ in range(3)]
         new_color = "#" + hex_numbers[0] + hex_numbers[1] + hex_numbers[2]
         self.bitmap_color_id[color_id] = new_color
-        self.edit_id_list.insert(0, str(color_id)+": "+new_color)
+        self.edit_id_list.insert(0, str(color_id) + ": " + new_color)
         self.edit_id_list.itemconfig(0, {'fg': new_color})
         return new_color
 
@@ -449,7 +476,27 @@ class Gui:
                         width=2
                     )
                     self.selected_tiles[rect_position] = rect_id
-            # fix (3*3)
+            if self.edit_work_state == "properties":
+                x = int(event.x / self.edit_tile_size[0])
+                y = int(event.y / self.edit_tile_size[1])
+                rect_position = (
+                    x * self.edit_tile_size[0],
+                    y * self.edit_tile_size[1],
+                    x * self.edit_tile_size[0] + self.edit_tile_size[0],
+                    y * self.edit_tile_size[1] + self.edit_tile_size[1]
+                )
+                if rect_position in self.properties_walkable.keys():
+                    self.edit_canvas.delete(self.properties_walkable.get(rect_position))
+                    self.properties_walkable.pop(rect_position, None)
+                else:
+                    rect_id = self.edit_canvas.create_rectangle(
+                        rect_position,
+                        outline="grey",
+                        fill="green",
+                        stipple="gray50",
+                        width=2
+                    )
+                    self.properties_walkable[rect_position] = rect_id
             if self.edit_work_state == "bitmap" and self.bitmap_id_input.get("1.0", tk.END).strip().isdecimal():
                 bit_tile_size = (
                     self.edit_tile_size[0] / self.tile_bitmap_shape[0],

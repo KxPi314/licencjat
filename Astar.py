@@ -41,7 +41,16 @@ def get_neighbors(current: (int, int), _map: Map) -> [(int, int)]:
     neighbors = []
     x, y = current
     # Dla kwadratowej, sąsiedz w kształcie +
-    options = [(x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y)]
+    options = [
+        (x, y - 1),
+        (x, y + 1),
+        (x - 1, y),
+        (x + 1, y),
+        # (x - 1, y - 1),
+        # (x + 1, y + 1),
+        # (x - 1, y + 1),
+        # (x + 1, y - 1)
+    ]
     for (i, j) in options:
         if 0 <= i < _map.grid_size[0] and 0 <= j < _map.grid_size[1]:
             neighbors.append((i, j))

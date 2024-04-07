@@ -14,8 +14,31 @@ class Wfc:
         self.collapse_counter = self._map.grid_size[0] * self._map.grid_size[1]
         self._map.grid = [[Tile(row, col, t_types) for col in range(self._map.grid_size[1])] for row in
                           range(self._map.grid_size[0])]
+
     def define_starting_platforms(self):
-        pass
+        self._map.grid[0][0] = Tile(
+            0,
+            0,
+            self.t_types,
+            tile_type=self.t_types[0]
+        )
+
+        self._map.grid[-1][-1] = Tile(
+            self._map.grid_size[0],
+            self._map.grid_size[1],
+            self.t_types,
+            tile_type=self.t_types[0]
+        )
+
+        self._map.grid[0][0].collapsed = True
+        self._map.grid[0][0].options = []
+        self.collapse_counter -= 1
+        self.update_near_collapsed(0, 0)
+
+        self._map.grid[-1][-1].collapsed = True
+        self._map.grid[-1][-1].options = []
+        self.collapse_counter -= 1
+        self.update_near_collapsed(self._map.grid_size[0]-1, self._map.grid_size[1]-1)
 
     def collapse_all(self):
         x = random.randint(0, self._map.grid_size[0]-1)
@@ -23,7 +46,7 @@ class Wfc:
 
         self.collapse_cell(x, y)
         self.update_near_collapsed(x, y)
-
+        self.define_starting_platforms()
         while not self.end_collapse():
             next_cell = self.find_best_cell()
             x, y = next_cell
@@ -36,6 +59,7 @@ class Wfc:
 
     def collapse_cell(self, row, col):
         self._map.grid[row][col].tile_type = self.best_cell_option(row, col)
+        self._map.grid[row][col].walkable = self._map.grid[row][col].tile_type.walkable
         self._map.grid[row][col].collapsed = True
         self._map.grid[row][col].options = []
         self.collapse_counter -= 1

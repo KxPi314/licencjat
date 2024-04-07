@@ -40,10 +40,12 @@ class Direction(Enum):
 class TileType:
     img_id: int
     puzzle_shape: np.array
+    walkable: bool
 
-    def __init__(self, img_id, puzzle_shape):
+    def __init__(self, img_id, puzzle_shape, walkable):
         self.img_id = img_id
         self.puzzle_shape = puzzle_shape
+        self.walkable = walkable
 
     def puzzle_edge(self, direction: Direction):
         result = None
