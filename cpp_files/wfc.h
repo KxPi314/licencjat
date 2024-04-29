@@ -3,40 +3,54 @@
 
 #include "load_input.h"
 #include <vector>
-#include <map>
-#include <algorithm>
-#include <iterator>
-#include <random>
 
-class Cell {
+class Cell{
 private:
     int row;
     int col;
     std::vector<int> options;
     bool collapsed;
-    int* id;
+    int id;
     bool walkable;
-    float difficult_terrain;
 
 public:
-    Cell();
-    Cell(int row, int col, std::vector<int> options, float difficult_terrain = 0.1, int* id = nullptr, bool walkable = false);
+    Cell(int row, int col, std::vector<int> options, int id = 0, bool walkable = false);
 
     void update(std::vector<int> new_options);
-    int* get_id();
-    int get_row();
-    int get_col();
-    bool is_collapsed();
     std::vector<int> get_options();
+    void clear_options();
+    bool is_collapsed();
+    
     void set_collapse();
     void set_id(int id);
+
+    int get_id();
+    int get_row();
+    int get_col();
 };
 
-void wfc(int width, int height, std::vector<int> start_options, std::map<int, Neighbors> neighbors_map, int*** id_arr);
-int best_cell_option(Cell* cell);
-void collapse_cell(int x, int y, Cell** cell_arr,  std::map<int, Neighbors> neighbors_map, int width, int height);
-void find_best_cell(int* x, int* y, Cell** cell_arr, int width, int height);
-void update_near_collapsed(int x, int y, Cell** cell_arr, std::map<int, Neighbors> neighbors_map, int width, int height);
-bool end_collapse(int counter);
+class Wfc{
+private:
+    int output_width; // wymiary mapy wyjsciowej
+    int output_height;
+    std::vector<int> start_options; //opcje startowe kazdej komórki
+    std::map<int, Neighbors> neighbors_map; //mapa relacji komórek (mozliwi sasiedzi w kazdym kierunku)
+    std::vector<std::vector<int>> output_id_mat; //szablon wyjscia
+    std::vector<std::vector<Cell>> cell_matrix; //plansza
 
-#endif //WFC_H
+public:
+    Wfc(
+        int output_width,
+        int output_height,
+        std::vector<int> start_options,
+        std::map<int, Neighbors> neighbors_map
+    );
+    std::vector<std::vector<int>> waveFunctionCollapse(); //główna funkcja zwracająca mapę
+    int select_option_for_cell(int x, int y); //zwraca id wybranej wartosci
+    void collapse_cell(int x, int y);
+    Cell* best_cell_to_collapse(); // wpisuje polozenie komórki po zmienne
+    void update_near_collapsed_cell(int x, int y); // aktualizuje opcje komórek sasiednich do podanej
+    bool end_wfc(int collapsed_counter); // porownuje licznik z wielkosia outputu
+};
+
+#endif // WFC_H

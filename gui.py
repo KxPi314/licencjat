@@ -3,13 +3,13 @@ import tkinter as tk
 from PIL import ImageTk, Image
 
 import Astar
-from map_elements import Map, TileType
+from map_elements import Map, TileType, Direction
 import constant
-from wfc import Wfc
+from new_wfc import wfcRunner
 import numpy as np
 
 
-class Gui:
+class App:
     tile_img_dict: dict
 
     # Edit values
@@ -35,30 +35,33 @@ class Gui:
     map_image = Image
     tk_map_image = tk.Image
     build_canvas: tk.Canvas
-    grid_size: (int, int)
+    map_grid_size: (int, int)
     grid_width_box: tk.Text
     grid_height_box: tk.Text
 
     def __init__(self):
         self.root = tk.Tk()
         self.root.wm_state('zoomed')
-        self.root.title("Map_generation")
+        self.root.title("Wave Function Collapse map generator")
         self.window_width = self.root.winfo_width()
         self.window_height = self.root.winfo_height()
+        # BUDOWANIE
         self.t_types = []
         self.tile_img_dict = {}
         self.tile_bitmap_shape = (2, 2)
+        # ---------
 
         self.build_frame = tk.Frame(self.root)
         self.edit_frame = tk.Frame(self.root)
-
-        self.grid_size = (10, 18)
+        # bazowo rozmiar mapy zapisany jako 10 na 18
+        self.map_grid_size = (10, 18)
 
         self.setup_build_frame()
         self.setup_edit_frame()
 
-        self._map = Map(self.grid_size)
-
+        # wypełniam mapę pustymi kafelkami
+        self._map = Map(self.map_grid_size)
+        # ustawaim tryb okienka bazowo na tryb budowania
         self.build_frame.pack(fill=tk.BOTH, expand=True)
 
         self.root.mainloop()
@@ -72,6 +75,7 @@ class Gui:
         self.build_frame.pack(fill=tk.BOTH, expand=True)
 
     # Build Frame functions
+    # w nich nic ciekawego tylko rozstawienie guzików i pól
     def setup_build_frame(self):
 
         # Frames
@@ -94,8 +98,8 @@ class Gui:
         text = tk.StringVar()
         text.set("score: 0")
         score = tk.Label(button_frame, textvariable=text)
-        self.grid_width_box.insert("1.0", str(self.grid_size[1]))
-        self.grid_height_box.insert("1.0", str(self.grid_size[0]))
+        self.grid_width_box.insert("1.0", str(self.map_grid_size[1]))
+        self.grid_height_box.insert("1.0", str(self.map_grid_size[0]))
 
         # Packing
         self.build_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -116,9 +120,10 @@ class Gui:
     def build_new_map(self):
         if self.tile_img_dict != {}:
             self.build_canvas.delete("all")
+            # odczyt rozmiaru mapy podanego przez uzytkownika
             self.build_get_grid_size()
-            wfc = Wfc(self._map, self.t_types)
-            wfc.collapse_all()
+            # wywołanie wfc w cpp
+            wfcRunner(build_neighbors_dict(self.t_types), self.map_grid_size[1], self.map_grid_size[0])
             self.build_load_map_texture()
 
     def build_a_star(self):
@@ -126,8 +131,9 @@ class Gui:
             start = (0, 0)
             target = (self._map.grid_size[0] - 1, self._map.grid_size[1] - 1)
             path = Astar.a_star_path(start, target, self._map)
-            scale = (self.map_image.size[0] / self.grid_size[1], self.map_image.size[1] / self.grid_size[0])
-            offset = (self.map_image.size[0] / self.grid_size[1] / 2, self.map_image.size[1] / self.grid_size[0] / 2)
+            scale = (self.map_image.size[0] / self.map_grid_size[1], self.map_image.size[1] / self.map_grid_size[0])
+            offset = (
+            self.map_image.size[0] / self.map_grid_size[1] / 2, self.map_image.size[1] / self.map_grid_size[0] / 2)
             for index, element in enumerate(path):
                 if index + 1 < len(path):
                     first_point = (element[1] * scale[0] + offset[0], element[0] * scale[1] + offset[1])
@@ -145,24 +151,29 @@ class Gui:
         x = self.grid_width_box.get("1.0", tk.END).strip()
         y = self.grid_height_box.get("1.0", tk.END).strip()
         if y.isdecimal() and x.isdecimal():
-            self.grid_size = (int(y), int(x))
-            self._map = Map(self.grid_size)
-        return self.grid_size
+            self.map_grid_size = (int(y), int(x))
+            self._map = Map(self.map_grid_size)
+        return self.map_grid_size
 
     def build_load_map_texture(self):
         map_image = Image.new(
             "RGB",
             (
-                constant.TILE_SIZE[1] * self.grid_size[1],
-                constant.TILE_SIZE[0] * self.grid_size[0]
+                constant.TILE_SIZE[1] * self.map_grid_size[1],
+                constant.TILE_SIZE[0] * self.map_grid_size[0]
             )
         )
-        for i in range(0, self.grid_size[0]):
-            for j in range(0, self.grid_size[1]):
-                if self._map.grid[i][j] is not None and self._map.grid[i][j].tile_type is not None:
-                    tile_image = self.tile_img_dict[self._map.grid[i][j].tile_type.img_id]
-                    tile_image = tile_image.resize((constant.TILE_SIZE[0], constant.TILE_SIZE[1]))
-                    map_image.paste(tile_image, (constant.TILE_SIZE[0] * j, constant.TILE_SIZE[1] * i))
+        with open("out.txt") as wfc_output:
+            try:
+                for i, line in enumerate(wfc_output):
+                    for j, elem in enumerate(line.split(" ")):
+                        if elem != '\n' and int(elem) != 0:
+                            tile_image = self.tile_img_dict[self.t_types[int(elem)-1].img_id]
+                            tile_image = tile_image.resize((constant.TILE_SIZE[0], constant.TILE_SIZE[1]))
+                            map_image.paste(tile_image, (constant.TILE_SIZE[0] * j, constant.TILE_SIZE[1] * i))
+            except Exception as e:
+                print(e)
+            wfc_output.close()
 
         original_width, original_height = map_image.size
         ratio = original_width / original_height
@@ -524,3 +535,28 @@ class Gui:
                     )
                     self.selected_bitmap[rect_position] = (rect_id,
                                                            int(self.bitmap_id_input.get("1.0", tk.END).strip()))
+
+
+def build_neighbors_dict(t_types: [TileType]):
+    directions = [Direction.LeftUP, Direction.Up, Direction.RightUp,
+                  Direction.Left, Direction.Right,
+                  Direction.LeftDown, Direction.Down, Direction.RightDown]
+    neighbors_dict = {}
+    #dodawanie zera / służy ono za puste pole
+    all_types = []
+    for num_0 in range(len(t_types)):
+        all_types.append(num_0+1)
+    neighbors_dict[0] = []
+    for _ in Direction:
+         neighbors_dict[0].append(all_types)
+    #dodawanie pozostałych wartosci
+    for num, current_type in enumerate(t_types):
+        neighbors_dict[num+1] = []
+        for direction in directions:
+            direction_arr = []
+            for num_2, t in enumerate(t_types):
+                if np.array_equal(t.puzzle_edge(direction.opposite()), current_type.puzzle_edge(direction)):
+                    direction_arr.append(num_2+1)
+            neighbors_dict[num+1].append(direction_arr)
+    print(neighbors_dict)
+    return neighbors_dict

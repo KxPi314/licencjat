@@ -1,190 +1,147 @@
 #include "wfc.h"
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
 
-
-Cell::Cell() : row(0), col(0), collapsed(false), id(nullptr), walkable(true), difficult_terrain(0.0f) {}
-
-Cell::Cell(int row, int col, std::vector<int> options, float difficult_terrain = 0.1, int* id = nullptr, bool walkable = false)
-    : row(row),
-    col(col),
-    options(options),
-    collapsed(false),
-    id(id),
-    walkable(walkable),
-    difficult_terrain(difficult_terrain) {}
+Cell::Cell(int row, int col, std::vector<int> options, int id, bool walkable)
+:row(row),
+ col(col),
+ options(options),
+ collapsed(false),
+ id(id),
+ walkable(walkable){}
 
 void Cell::update(std::vector<int> new_options){
     std::sort(options.begin(), options.end());
     std::sort(new_options.begin(), new_options.end());
-
     std::vector<int> intersection;
 
-    std::set_intersection(options.begin(), options.end(),
-                          new_options.begin(), new_options.end(),
-                          std::back_inserter(intersection));
-
-    this->options = std::move(intersection);
+    std::set_intersection(options.begin(),options.end(),
+                          new_options.begin(),new_options.end(),
+                          back_inserter(intersection)
+                          );
+    options = intersection;
 }
+std::vector<int> Cell::get_options(){return options;}
+void Cell::clear_options(){options.clear();}
+bool Cell::is_collapsed(){return collapsed;}
 
-int* Cell::get_id(){
-    return id;
-}
+void Cell::set_collapse(){collapsed = true;}
+void Cell::set_id(int id){this->id = id;}
 
-int Cell::get_row(){
-    return row;
-}
+int Cell::get_id(){return id;}
+int Cell::get_row(){return row;}
+int Cell::get_col(){return col;}
 
-int Cell::get_col(){
-    return col;
-}
+//implementacje wfc
+ Wfc::Wfc(
+        int output_width,
+        int output_height,
+        std::vector<int> start_options,
+        std::map<int, Neighbors> neighbors_map
+    )
+    :output_width(output_width),
+     output_height(output_height),
+     start_options(start_options),
+     neighbors_map(neighbors_map),
+     output_id_mat(output_height, std::vector<int>(output_width, 0)){
+        cell_matrix = {};
+        for(int i = 0; i<output_height; i++){
+            std::vector<Cell> line = {};
+            for(int j = 0; j<output_width; j++){
+                line.emplace_back(Cell(i, j, this->start_options, 0, false));
+            }
+            cell_matrix.emplace_back(line);
+        }
+     }
 
-bool Cell::is_collapsed(){
-    return collapsed;
-}
+std::vector<std::vector<int>> Wfc::waveFunctionCollapse(){
+    int collapse_counter = 0;
+    srand(time(nullptr));
+    int x = rand() % output_height;
+    int y = rand() % output_width; 
 
-std::vector<int> Cell::get_options(){
-    return options;
-}
+    collapse_cell(x, y);
+    update_near_collapsed_cell(x,y);
+    collapse_counter++;
 
-void Cell::set_collapse(){
-    collapsed = true;
-}
-
-void Cell::set_id(int id){
-    this->id = &id;
-}
-
-void freeMemory(Cell** cell_arr, int height) {
-    for (int i = 0; i < height; ++i) {
-        delete[] cell_arr[i];
+    while (!end_wfc(collapse_counter))
+    {
+        Cell* best = best_cell_to_collapse();
+        if(best == nullptr)
+            break;
+        collapse_cell(best->get_row(), best->get_col());
+        update_near_collapsed_cell(best->get_row(), best->get_col());
+        collapse_counter++;
     }
-    delete[] cell_arr;
-}
-
-void wfc(int width, int height, std::vector<int> start_options, std::map<int, Neighbors> neighbors_map, int*** id_arr){
-
-    Cell** cell_arr = new Cell*[height];
-    for (int i = 0; i < height; ++i) {
-        cell_arr[i] = new Cell[width];
-        for(int j = 0; j < width; j++){
-            cell_arr[i][j] = Cell(i,j,start_options);
+    for(int i = 0; i< output_height; i++){
+        for(int j = 0; j<output_width; j++){
+            output_id_mat[i][j] = cell_matrix[i][j].get_id();
         }
     }
-
-    std::random_device rd;
-    std::mt19937 gen(rd()); 
-
-    std::uniform_int_distribution<> dis(0, height);
-
-    int x = dis(gen);
-    int y = dis(gen);
-
-    collapse_cell(x,y, cell_arr, neighbors_map, width, height);
-
-    int end_counter = width*height;
-    while(!end_collapse(end_counter)){
-        find_best_cell(&x, &y, cell_arr, width, height);
-        collapse_cell(x,y, cell_arr, neighbors_map, width, height);
-        end_counter--;
-    }
-
-    *id_arr = new int*[height];
-    for (int i = 0; i < height; ++i) {
-        id_arr[i] = new int*[width];
-        for(int j = 0; j < width; j++){
-            id_arr[i][j] = cell_arr[i][j].get_id();
-        }
-    }
-
-    freeMemory(cell_arr, height);
+    return output_id_mat;
 }
-
-int best_cell_option(Cell* cell){
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
-    std::uniform_int_distribution<> dis(0, cell->get_options().size() - 1);
-    int random_index = dis(gen);
-    return cell->get_options()[random_index];
+int Wfc::select_option_for_cell(int x, int y){
+    if(cell_matrix[x][y].get_options().size()>0)
+        return cell_matrix[x][y].get_options()[rand() % cell_matrix[x][y].get_options().size()];
+    return 0;
 }
-
-void collapse_cell(int x, int y, Cell** cell_arr,  std::map<int, Neighbors> neighbors_map, int width, int height){
-    cell_arr[x][y].set_id(best_cell_option(&cell_arr[x][y]));
-    cell_arr[x][y].set_collapse();
-    cell_arr[x][y].get_options().clear();
-    update_near_collapsed(x, y, cell_arr, neighbors_map, width, height);
+void Wfc::collapse_cell(int x, int y){
+    int id = select_option_for_cell(x, y);
+    cell_matrix[x][y].set_id(id);
+    cell_matrix[x][y].clear_options(); 
+    cell_matrix[x][y].set_collapse();
 }
-
-void find_best_cell(int* x, int* y, Cell** cell_arr, int width, int height){
+Cell* Wfc::best_cell_to_collapse(){
     std::vector<Cell*> best;
-    for (int i = 0; i < height; ++i){
-        for(int j = 0; j < width; j++){
-            if(!cell_arr[i][j].is_collapsed()){
-                if(best.empty()){
-                    best.push_back(&cell_arr[i][j]);
+    for(int i=0;i<output_height;i++){
+        for(int j=0;j<output_width;j++){
+            if(!cell_matrix[i][j].is_collapsed()){
+                if(best.empty())
+                    best.push_back(&cell_matrix[i][j]);
+                else if(cell_matrix[i][j].get_options().size()==best[0]->get_options().size()){
+                    best.push_back(&cell_matrix[i][j]);
                 }
-                else if(cell_arr[i][j].get_options().size()<best[0]->get_options().size()){
+                else if(cell_matrix[i][j].get_options().size()<best[0]->get_options().size()){
                     best.clear();
-                    best.push_back(&cell_arr[i][j]);
-                }
-                else if(cell_arr[i][j].get_options().size()==best[0]->get_options().size()){
-                    best.push_back(&cell_arr[i][j]);
+                    best.push_back(&cell_matrix[i][j]);
                 }
             }
         }
     }
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
-    std::uniform_int_distribution<> dis(0, best.size() - 1);
-    int random_index = dis(gen);
-
-    Cell* random_element = best[random_index];
-    int row = random_element->get_row();
-    int col = random_element->get_col();
-    *x = row;
-    *y = col;
+    if(best.empty())
+        return nullptr;
+    return best[rand() % best.size()];
 }
-
-void update_near_collapsed(int x, int y, Cell** cell_arr, std::map<int, Neighbors> neighbors_map, int width, int height) {
-    std::vector<std::pair<int, int>> offsets = {
-        {-1, 0}, {-1, 1}, {0, 1}, {1, 1},
-        {1, 0}, {1, -1}, {0, -1}, {-1, -1}
-    };
-
-    for (const auto& offset : offsets) {
-        int dx = offset.first;
-        int dy = offset.second;
-        int new_x = x + dx;
-        int new_y = y + dy;
-
-        if (new_x >= 0 && new_x < height && new_y >= 0 && new_y < width && !cell_arr[new_x][new_y].is_collapsed()) {
-            switch (dx) {
-                case -1:
-                    switch (dy) {
-                        case 0: cell_arr[new_x][new_y].update(neighbors_map[*cell_arr[x][y].get_id()].north); break;
-                        case 1: cell_arr[new_x][new_y].update(neighbors_map[*cell_arr[x][y].get_id()].northeast); break;
-                        case -1: cell_arr[new_x][new_y].update(neighbors_map[*cell_arr[x][y].get_id()].northwest); break;
-                    }
-                    break;
-                case 0:
-                    switch (dy) {
-                        case 1: cell_arr[new_x][new_y].update(neighbors_map[*cell_arr[x][y].get_id()].east); break;
-                        case -1: cell_arr[new_x][new_y].update(neighbors_map[*cell_arr[x][y].get_id()].west); break;
-                    }
-                    break;
-                case 1:
-                    switch (dy) {
-                        case 0: cell_arr[new_x][new_y].update(neighbors_map[*cell_arr[x][y].get_id()].south); break;
-                        case 1: cell_arr[new_x][new_y].update(neighbors_map[*cell_arr[x][y].get_id()].southeast); break;
-                        case -1: cell_arr[new_x][new_y].update(neighbors_map[*cell_arr[x][y].get_id()].southwest); break;
-                    }
-                    break;
+void Wfc::update_near_collapsed_cell(int x, int y){
+    int direction = 0;
+    std::vector<std::vector<int>> neighbors;
+    neighbors.push_back(neighbors_map[cell_matrix[x][y].get_id()].northwest);
+    neighbors.push_back(neighbors_map[cell_matrix[x][y].get_id()].north);
+    neighbors.push_back(neighbors_map[cell_matrix[x][y].get_id()].northeast);
+    neighbors.push_back(neighbors_map[cell_matrix[x][y].get_id()].west);
+    neighbors.push_back(neighbors_map[cell_matrix[x][y].get_id()].east);
+    neighbors.push_back(neighbors_map[cell_matrix[x][y].get_id()].southwest);
+    neighbors.push_back(neighbors_map[cell_matrix[x][y].get_id()].south);
+    neighbors.push_back(neighbors_map[cell_matrix[x][y].get_id()].southeast);
+    for(int i = -1; i<2; i++){
+        for(int j = -1; j<2; j++){
+            if(!(i== 0 && j==0)){
+                if((x+i)<output_height && (x+i)>=0 && (y+j)<output_width && (y+j)>=0 && !cell_matrix[x+i][y+j].is_collapsed()){
+                    cell_matrix[x+i][y+j].update(neighbors[direction]);
+                }
+                direction++;
             }
         }
     }
 }
-
-
-bool end_collapse(int counter){
-    return counter <= 0;
+bool Wfc::end_wfc(int collapsed_counter){
+    if(collapsed_counter >= output_width*output_height)
+        return true;
+    return false;
 }
+
+
+//zaczyna sie od 00 nie wiem czemu

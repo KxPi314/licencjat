@@ -73,24 +73,17 @@ class Tile:
     col: int
     walkable: bool
     tile_type: TileType
-    difficult_terrain: float
 
     # wfc data
     options: [TileType]
-    collapsed: bool
 
-    def __init__(self, row, col, start_options, tile_type=None, walkable=True, difficult_terrain=1.0):
+    def __init__(self, row, col, start_options, tile_type=None, walkable=True):
         self.row = row
         self.col = col
         self.collapsed = False
         self.walkable = walkable
         self.options = start_options
         self.tile_type = tile_type
-        self.difficult_terrain = difficult_terrain
-
-# do poprawy
-    def update(self, options: [TileType]):
-        self.options = list(set(self.options) & set(options))
 
 
 class Map:

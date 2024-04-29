@@ -1,54 +1,87 @@
 #include "load_input.h"
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <algorithm>
 
-void load_wfc_input(char **args, int *width, int *height, std::vector<int> *start_options, std::map<int, Neighbors> *neighbors) {
-    // Extracting width and height
-    *width = std::stoi(args[1]);
-    *height = std::stoi(args[2]);
 
-    std::string input_str = args[3];
-    std::string input_substr;
 
-    // Extracting start options
-    size_t pos = input_str.find("|");
-    int size_of_options = std::stoi(input_str.substr(0, pos));
-    input_substr = input_str.substr(pos + 1);
-
-    std::vector<int> read_options;
-    for (int i = 0; i < size_of_options; i++) {
-        read_options.push_back(i);
-    }
-    *start_options = read_options;
-
-    // Extracting neighbors
-    pos = input_substr.find("|");
-    while (pos != std::string::npos) {
-        Neighbors temp;
-        std::vector<int> directions[8];
-
-        // Extracting directions for each neighbor
-        for (int j = 0; j < 8; j++) {
-            while (true) {
-                int comma = input_substr.find(",");
-                int semicolon = input_substr.find(";");
-                if (semicolon < comma || semicolon == -1) // Changed line to handle last entry in a row.
-                    break;
-                int number = std::stoi(input_substr.substr(0, comma));
-                input_substr = input_substr.substr(comma + 1);
-                directions[j].push_back(number);
-            }
+void load_wfc_input(std::ifstream& csv_file, std::vector<int> *start_options, std::map<int, Neighbors> *neighbors)
+{
+    std::map<int, Neighbors> new_neighbors = {};
+    std::vector<int> new_start_options = {};
+    
+    int point_counter = 0;
+    std::string line;
+    std::getline(csv_file, line);
+    //iterowanie po linijkach "sasiadach"
+    while (std::getline(csv_file, line)) {
+        std::vector<std::string> tokens;
+        std::stringstream str_stream(line);
+        std::string token;
+        Neighbors point;
+        
+        while (std::getline(str_stream, token, ';')) {
+            tokens.push_back(token);
         }
-        // Assigning directions to temp struct
-        temp.north = directions[0];
-        temp.northeast = directions[1];
-        temp.east = directions[2];
-        temp.southeast = directions[3];
-        temp.south = directions[4];
-        temp.southwest = directions[5];
-        temp.west = directions[6];
-        temp.northwest = directions[7];
-        (*neighbors)[neighbors->size()] = temp; // Storing neighbors in map
-        pos = input_substr.find("|", pos + 1);
+        int direction_counter = 0;
+        //iterowanie po kierunkach
+        for (const std::string& t : tokens) {
+            std::vector<int> direction = {};
+            std::stringstream tokenStream(t);
+            std::string number;
+            
+            //iterowanie po elementach kierunków.
+            while (std::getline(tokenStream, number, ',')) {
+                // dodawanie wartosci do wektora kierunku.
+                int value = std::stoi(number);
+                direction.push_back(value);
+                // dodawanie do opcji startowych jesli juz tam nie jest.
+                auto iter = std::find(new_start_options.begin(), new_start_options.end(), value);
+                if (iter == new_start_options.end() && value!=0) {
+                    new_start_options.push_back(value);
+                }
+            }
+            switch (direction_counter)
+            {
+            case 0:
+                point.northwest = direction;
+                break;
+            case 1:
+                point.north = direction;
+                break;
+            case 2:
+                point.northeast = direction;
+                break;
+            case 3:
+                point.west = direction;
+                break;
+            case 4:
+                point.east = direction;
+                break;
+            case 5:
+                point.southwest = direction;
+                break;
+            case 6:
+                point.south = direction;
+                break;
+            case 7:
+                point.southeast = direction;
+                break;
+            default:
+                break;
+            }
+            direction_counter++;
+        }
+        new_neighbors[point_counter] = point;
+        point_counter++;
     }
+
+    // zapis wyjscia
+    *neighbors = new_neighbors;
+    *start_options = new_start_options;
+
+    return;
 }
 
 void load_a_star_input(){
