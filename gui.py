@@ -1,10 +1,10 @@
 import random
+import time
 import tkinter as tk
 from PIL import ImageTk, Image
 
 import Astar
-from map_elements import Map, TileType, Direction
-import constant
+from map_elements import Map, Tile, TileType, Direction
 from new_wfc import wfcRunner
 import numpy as np
 
@@ -18,11 +18,11 @@ class App:
     edit_img_scale: (int, int)
     edit_canvas: tk.Canvas
     edit_work_state: str
-    tile_img_size: (int, int)
     selected_tiles: dict
     properties_walkable: dict
     selected_bitmap: dict
     bitmap_id_input: tk.Text
+    asset_path: tk.Text
     bitmap_color_id = dict
     edit_tile_set_size: (int, int)
     edit_tile_size: (float, float)
@@ -38,21 +38,23 @@ class App:
     map_grid_size: (int, int)
     grid_width_box: tk.Text
     grid_height_box: tk.Text
+    output_save_path: tk.Text
+    build_time: tk.Label
+    path_len: tk.Label
+    score: tk.Label
 
     def __init__(self):
         self.root = tk.Tk()
         self.root.wm_state('zoomed')
         self.root.title("Wave Function Collapse map generator")
-        self.window_width = self.root.winfo_width()
-        self.window_height = self.root.winfo_height()
         # BUDOWANIE
         self.t_types = []
         self.tile_img_dict = {}
         self.tile_bitmap_shape = (2, 2)
         # ---------
 
-        self.build_frame = tk.Frame(self.root)
-        self.edit_frame = tk.Frame(self.root)
+        self.build_frame = tk.Frame(self.root, bg="#242a2b")
+        self.edit_frame = tk.Frame(self.root, bg="#242a2b")
         # bazowo rozmiar mapy zapisany jako 10 na 18
         self.map_grid_size = (10, 18)
 
@@ -78,28 +80,35 @@ class App:
     # w nich nic ciekawego tylko rozstawienie guzików i pól
     def setup_build_frame(self):
 
+        bg_color = "#242a2b"
+        fg_color = "#e1f0f5"
         # Frames
-        button_frame = tk.Frame(self.build_frame, bg='gray')
-        height_frame = tk.Frame(button_frame, bg='gray')
-        width_frame = tk.Frame(button_frame, bg='gray')
+        button_frame = tk.Frame(self.build_frame, bg=bg_color)
+        height_frame = tk.Frame(button_frame, bg=bg_color)
+        width_frame = tk.Frame(button_frame, bg=bg_color)
 
         # Widgets
-        self.build_canvas = tk.Canvas(self.build_frame, background='black')
+        self.build_canvas = tk.Canvas(self.build_frame, background="black")
 
         grid_width_label = tk.Label(width_frame, text="x:", width=2, height=1)
         grid_height_label = tk.Label(height_frame, text="y:", width=2, height=1)
         self.grid_width_box = tk.Text(width_frame, width=12, height=1)
+        self.output_save_path = tk.Text(button_frame, width=14, height=1)
         self.grid_height_box = tk.Text(height_frame, width=12, height=1)
-        new_map_button = tk.Button(button_frame, text="new map", command=self.build_new_map, width=16)
-        a_star_button = tk.Button(button_frame, text="A star", command=self.build_a_star, width=16)
-        save_button = tk.Button(button_frame, text="save", command=self.build_save, width=16)
-        edit_button = tk.Button(button_frame, text="edit", command=self.change_build_to_edit, width=16)
+        new_map_button = tk.Button(button_frame, text="new map", command=self.build_new_map, width=16, bg="#25444f",
+                                   fg=fg_color)
+        a_star_button = tk.Button(button_frame, text="A star", command=self.build_a_star, width=16, bg="#25444f",
+                                  fg=fg_color)
+        save_button = tk.Button(button_frame, text="save", command=self.build_save, width=16, bg="#25444f", fg=fg_color)
+        edit_button = tk.Button(button_frame, text="edit", command=self.change_build_to_edit, width=16, bg="#25444f",
+                                fg=fg_color)
 
-        text = tk.StringVar()
-        text.set("score: 0")
-        score = tk.Label(button_frame, textvariable=text)
+        self.build_time = tk.Label(button_frame, text="time: 0", bg=bg_color, fg="white")
+        self.path_len = tk.Label(button_frame, text="A* path len: 0", bg=bg_color, fg="white")
+        self.score = tk.Label(button_frame, text="Score: 0", bg=bg_color, fg="white")
         self.grid_width_box.insert("1.0", str(self.map_grid_size[1]))
         self.grid_height_box.insert("1.0", str(self.map_grid_size[0]))
+        self.output_save_path.insert("1.0", "saves/new_map.jpg")
 
         # Packing
         self.build_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -114,8 +123,11 @@ class App:
         new_map_button.pack()
         a_star_button.pack()
         save_button.pack()
+        self.output_save_path.pack()
         edit_button.pack()
-        score.pack()
+        self.build_time.pack()
+        self.path_len.pack()
+        self.score.pack()
 
     def build_new_map(self):
         if self.tile_img_dict != {}:
@@ -123,29 +135,68 @@ class App:
             # odczyt rozmiaru mapy podanego przez uzytkownika
             self.build_get_grid_size()
             # wywołanie wfc w cpp
+            start = time.time()
             wfcRunner(build_neighbors_dict(self.t_types), self.map_grid_size[1], self.map_grid_size[0])
+            self.build_time.config(text=f"time: {round(time.time() - start, 4)}")
             self.build_load_map_texture()
 
     def build_a_star(self):
+        # self.a_star_start = (int(0), 0)
+        # self.a_star_finish = (int(self._map.grid_size[0]-1), int(self._map.grid_size[1] - 1))
+
+        self.a_star_start = (int(self._map.grid_size[0] / 2), 0)
+        self.a_star_finish = (int(self._map.grid_size[0] / 2), int(self._map.grid_size[1] - 1))
         try:
-            start = (0, 0)
-            target = (self._map.grid_size[0] - 1, self._map.grid_size[1] - 1)
+            if self.a_star_start and self.a_star_finish:
+                start = self.a_star_start
+                target = self.a_star_finish
+            else:
+                start = (0, 0)
+                target = (self._map.grid_size[0] - 1, self._map.grid_size[1] - 1)
+
             path = Astar.a_star_path(start, target, self._map)
+
+            if not path:
+                self.score.config(text=f"Score: 0")
+                print("No path found.")
+                return
+
             scale = (self.map_image.size[0] / self.map_grid_size[1], self.map_image.size[1] / self.map_grid_size[0])
             offset = (
-            self.map_image.size[0] / self.map_grid_size[1] / 2, self.map_image.size[1] / self.map_grid_size[0] / 2)
-            for index, element in enumerate(path):
-                if index + 1 < len(path):
-                    first_point = (element[1] * scale[0] + offset[0], element[0] * scale[1] + offset[1])
-                    second_point = (
-                        path[index + 1][1] * scale[0] + offset[0], path[index + 1][0] * scale[1] + offset[1])
-                    self.build_canvas.create_line(first_point, second_point)
-        except AttributeError:
-            print("A* Error")
+                self.map_image.size[0] / self.map_grid_size[1] / 2, self.map_image.size[1] / self.map_grid_size[0] / 2)
+
+            path_points = [(float(point[1] * scale[0] + offset[0]), float(point[0] * scale[1] + offset[1])) for
+                           point in path]
+
+            if len(path_points) < 2:
+                return
+
+            self.build_canvas.create_line(*path_points, width=8, fill="white")  # Thick line with white color
+
+            self.build_canvas.create_line(*path_points, width=4)  # Thin line with desired color
+            self.path_len.config(text=f"A* path len: {len(path)}")
+            self.score.config(text=f"Score: {self.count_score(path)}")
+        except Exception as e:
+            self.score.config(text=f"Score: 0")
+            print(f"Error in build_a_star: {e}")
+
+    def count_score(self, path):
+        if not path:
+            return 0
+        m = self.map_grid_size[0] * self.map_grid_size[1]
+        d_manhattan = self.map_grid_size[1]
+        print(self.map_grid_size[1])
+        d = len(path)
+        p = self._map.walkable_land()
+        l = 0.75  # target proportions
+        k = 0.5
+        score = round(100 * ((d - d_manhattan) / m + k * (1 - abs(p / m - l))), 3)
+
+        return score
 
     def build_save(self):
         if self.map_image is not None:
-            self.map_image.save("saves/new_map.jpg")
+            self.map_image.save(self.output_save_path.get("1.0", tk.END).strip())
 
     def build_get_grid_size(self):
         x = self.grid_width_box.get("1.0", tk.END).strip()
@@ -159,8 +210,8 @@ class App:
         map_image = Image.new(
             "RGB",
             (
-                constant.TILE_SIZE[1] * self.map_grid_size[1],
-                constant.TILE_SIZE[0] * self.map_grid_size[0]
+                self.edit_tile_size[1] * self.map_grid_size[1],
+                self.edit_tile_size[0] * self.map_grid_size[0]
             )
         )
         with open("out.txt") as wfc_output:
@@ -168,9 +219,16 @@ class App:
                 for i, line in enumerate(wfc_output):
                     for j, elem in enumerate(line.split(" ")):
                         if elem != '\n' and int(elem) != 0:
-                            tile_image = self.tile_img_dict[self.t_types[int(elem)-1].img_id]
-                            tile_image = tile_image.resize((constant.TILE_SIZE[0], constant.TILE_SIZE[1]))
-                            map_image.paste(tile_image, (constant.TILE_SIZE[0] * j, constant.TILE_SIZE[1] * i))
+                            tile_image = self.tile_img_dict[self.t_types[int(elem) - 1].img_id]
+                            tile_image = tile_image.resize((self.edit_tile_size[0], self.edit_tile_size[1]))
+                            map_image.paste(tile_image, (self.edit_tile_size[0] * j, self.edit_tile_size[1] * i))
+                            self._map.grid[i][j] = Tile(i,
+                                                        j,
+                                                        [],
+                                                        tile_type=self.t_types[int(elem) - 1],
+                                                        walkable=self.t_types[int(elem) - 1].walkable
+                                                        )
+
             except Exception as e:
                 print(e)
             wfc_output.close()
@@ -196,18 +254,9 @@ class App:
 
     # Edit Frame functions
     def setup_edit_frame(self):
-        self.edit_img_scale = 2
-        self.asset_image = Image.open('map_assets/v.3/Island_24x24.png')
-        self.tk_asset_image = ImageTk.PhotoImage(
-            self.asset_image.resize((
-                self.asset_image.width * self.edit_img_scale,
-                self.asset_image.height * self.edit_img_scale
-            )))
-
         # Values
         button_size = (10, 1)
         self.edit_work_state = "select_tile"
-        self.tile_img_size = (24, 24)
         self.selected_tiles = {}
         self.properties_walkable = {}
         self.selected_bitmap = {}
@@ -216,53 +265,80 @@ class App:
         self.checkbox_var.set(2)
 
         # Frames
-        main_frame = tk.Frame(self.edit_frame)
-        button_frame = tk.Frame(main_frame)
-        bitmap_frame = tk.Frame(main_frame)
-        checkbox_frame = tk.Frame(main_frame)
+        main_frame = tk.Frame(self.edit_frame, bg="#25444f")
+        button_frame = tk.Frame(main_frame, bg="#25444f")
+        bitmap_frame = tk.Frame(main_frame, bg="#25444f")
+        checkbox_frame = tk.Frame(main_frame, bg="#25444f")
+        tile_size_frame = tk.Frame(main_frame, bg="#25444f")
 
         # Widgets
+        self.asset_path = tk.Text(main_frame, width=14, height=1)
+        self.asset_path.insert("1.0", "map_assets/Island_24x24.png")
+        update_button = tk.Button(master=main_frame,
+                                  command=self.edit_update_path,
+                                  text='update',
+                                  width=16,
+                                  height=button_size[1],
+                                  bg="#25444f",
+                                  fg="#e1f0f5")
+
         save_button = tk.Button(master=button_frame,
                                 command=self.edit_save,
                                 text='save',
                                 width=7,
-                                height=button_size[1])
+                                height=button_size[1],
+                                bg="#25444f",
+                                fg="#e1f0f5")
         back_button = tk.Button(master=button_frame,
                                 command=self.change_edit_to_build,
                                 text='back',
                                 width=7,
-                                height=button_size[1])
+                                height=button_size[1],
+                                bg="#25444f",
+                                fg="#e1f0f5")
 
         select_button = tk.Button(master=main_frame,
                                   command=self.edit_select_tile,
                                   text='select tiles',
                                   width=16,
-                                  height=button_size[1])
+                                  height=button_size[1],
+                                  bg="#25444f",
+                                  fg="#e1f0f5")
+
+        edit_tile_size_label = tk.Label(tile_size_frame, text="x", width=1, height=1)
+        self.edit_tile_width_input = tk.Text(tile_size_frame, width=5, height=1)
+        self.edit_tile_height_input = tk.Text(tile_size_frame, width=5, height=1)
+        self.edit_tile_height_input.insert("1.0", "24")
+        self.edit_tile_width_input.insert("1.0", "24")
 
         bitmap_button = tk.Button(master=main_frame,
                                   command=self.edit_bitmap,
                                   text='bitmap',
                                   width=16,
-                                  height=button_size[1])
+                                  height=button_size[1],
+                                  bg="#25444f",
+                                  fg="#e1f0f5")
 
         properties_button = tk.Button(master=main_frame,
                                       command=self.edit_properties,
-                                      text='properties',
+                                      text='walkable',
                                       width=16,
-                                      height=button_size[1])
+                                      height=button_size[1],
+                                      bg="#25444f",
+                                      fg="#e1f0f5")
 
-        bitmap_id_label = tk.Label(bitmap_frame, text="id:", width=2, height=1)
+        bitmap_id_label = tk.Label(bitmap_frame, text="id:", width=2, height=1, bg="#25444f", fg="#e1f0f5")
         self.bitmap_id_input = tk.Text(master=bitmap_frame,
                                        width=12,
                                        height=button_size[1])
 
-        bitmap_shape_check_3_3 = tk.Checkbutton(checkbox_frame, text='3/3',
-                                                command=self.edit_bitmap_shape, variable=self.checkbox_var,
-                                                onvalue=3, offvalue=2)
-
-        bitmap_shape_check_2_2 = tk.Checkbutton(checkbox_frame, text='2/2',
-                                                command=self.edit_bitmap_shape, variable=self.checkbox_var,
-                                                onvalue=2, offvalue=3)
+        # bitmap_shape_check_3_3 = tk.Checkbutton(checkbox_frame, text='3/3',
+        #                                         command=self.edit_bitmap_shape, variable=self.checkbox_var,
+        #                                         onvalue=3, offvalue=2)
+        #
+        # bitmap_shape_check_2_2 = tk.Checkbutton(checkbox_frame, text='2/2',
+        #                                         command=self.edit_bitmap_shape, variable=self.checkbox_var,
+        #                                         onvalue=2, offvalue=3)
 
         self.edit_id_list = tk.Listbox(main_frame, width=20)
 
@@ -271,19 +347,33 @@ class App:
 
         self.edit_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         main_frame.pack()
+        self.asset_path.pack()
+        update_button.pack()
         button_frame.pack()
         save_button.pack(side=tk.LEFT)
         back_button.pack()
         select_button.pack()
+        self.edit_tile_width_input.pack(side=tk.LEFT)
+        edit_tile_size_label.pack(side=tk.LEFT)
+        self.edit_tile_height_input.pack(side=tk.LEFT)
+        tile_size_frame.pack()
+        properties_button.pack()
         bitmap_button.pack()
         bitmap_id_label.pack(side=tk.LEFT)
         self.bitmap_id_input.pack()
         bitmap_frame.pack()
-        bitmap_shape_check_3_3.pack()
-        bitmap_shape_check_2_2.pack()
+        # bitmap_shape_check_3_3.pack()
+        # bitmap_shape_check_2_2.pack()
         checkbox_frame.pack()
         self.edit_id_list.pack()
-        properties_button.pack()
+
+        self.edit_img_scale = 2
+        self.asset_image = Image.open(self.asset_path.get("1.0", tk.END).strip())
+        self.tk_asset_image = ImageTk.PhotoImage(
+            self.asset_image.resize((
+                self.asset_image.width * self.edit_img_scale,
+                self.asset_image.height * self.edit_img_scale
+            )))
 
         # loading img
         self.edit_canvas.create_image(
@@ -291,7 +381,54 @@ class App:
             self.tk_asset_image.height() / 2,
             image=self.tk_asset_image
         )
+        self.edit_set_tile_set_size()
         self.edit_canvas.bind('<Button-1>', self.tile_clicked)
+        self.edit_canvas.bind('<B1-Motion>', self.tile_clicked)
+
+        self.edit_canvas.bind('<Button-3>', self.tile_unclicked)
+        self.edit_canvas.bind('<B3-Motion>', self.tile_unclicked)
+
+    def edit_update_path(self):
+        new_asset_path = self.asset_path.get("1.0", tk.END).strip()
+
+        try:
+
+            new_asset_image = Image.open(new_asset_path)
+
+            self.asset_image = new_asset_image
+            self.tk_asset_image = ImageTk.PhotoImage(
+                self.asset_image.resize((
+                    self.asset_image.width * self.edit_img_scale,
+                    self.asset_image.height * self.edit_img_scale
+                ))
+            )
+
+            self.edit_canvas.delete("all")
+
+            self.edit_canvas.create_image(
+                self.tk_asset_image.width() / 2,
+                self.tk_asset_image.height() / 2,
+                image=self.tk_asset_image
+            )
+            self.edit_set_tile_set_size()
+        except Exception as e:
+            print("Error loading image:", e)
+
+    def edit_set_tile_set_size(self):
+        x = self.edit_tile_width_input.get("1.0", tk.END).strip()
+        y = self.edit_tile_height_input.get("1.0", tk.END).strip()
+        if y.isdecimal() and x.isdecimal():
+            self.edit_tile_size = (int(y), int(x))
+            print()
+
+        if self.asset_image is not None:
+            self.edit_tile_set_size = (
+                (self.asset_image.width / self.edit_tile_size[0]), (self.asset_image.height / self.edit_tile_size[1]))
+
+            self.edit_tile_size = (
+                int(self.tk_asset_image.width() / self.edit_tile_set_size[0]),
+                int(self.tk_asset_image.height() / self.edit_tile_set_size[1])
+            )
 
     def edit_save(self):
         if self.selected_tiles != {}:
@@ -460,13 +597,8 @@ class App:
         return new_color
 
     def tile_clicked(self, event):
-        self.edit_tile_set_size = (9, 8)
-        self.edit_tile_size = (
-            (self.tk_asset_image.width() / self.edit_tile_set_size[0]),
-            (self.tk_asset_image.height() / self.edit_tile_set_size[1])
-        )
         if event.x < self.tk_asset_image.width() and event.y < self.tk_asset_image.height():
-            if self.edit_work_state == "select_tile":
+            if self.edit_work_state in ["select_tile", "properties"]:
                 x = int(event.x / self.edit_tile_size[0])
                 y = int(event.y / self.edit_tile_size[1])
                 rect_position = (
@@ -475,10 +607,7 @@ class App:
                     x * self.edit_tile_size[0] + self.edit_tile_size[0],
                     y * self.edit_tile_size[1] + self.edit_tile_size[1]
                 )
-                if rect_position in self.selected_tiles.keys():
-                    self.edit_canvas.delete(self.selected_tiles.get(rect_position))
-                    self.selected_tiles.pop(rect_position, None)
-                else:
+                if self.edit_work_state == "select_tile":
                     rect_id = self.edit_canvas.create_rectangle(
                         rect_position,
                         outline="grey",
@@ -487,19 +616,7 @@ class App:
                         width=2
                     )
                     self.selected_tiles[rect_position] = rect_id
-            if self.edit_work_state == "properties":
-                x = int(event.x / self.edit_tile_size[0])
-                y = int(event.y / self.edit_tile_size[1])
-                rect_position = (
-                    x * self.edit_tile_size[0],
-                    y * self.edit_tile_size[1],
-                    x * self.edit_tile_size[0] + self.edit_tile_size[0],
-                    y * self.edit_tile_size[1] + self.edit_tile_size[1]
-                )
-                if rect_position in self.properties_walkable.keys():
-                    self.edit_canvas.delete(self.properties_walkable.get(rect_position))
-                    self.properties_walkable.pop(rect_position, None)
-                else:
+                elif self.edit_work_state == "properties":
                     rect_id = self.edit_canvas.create_rectangle(
                         rect_position,
                         outline="grey",
@@ -522,19 +639,58 @@ class App:
                     x * bit_tile_size[0] + bit_tile_size[0],
                     y * bit_tile_size[1] + bit_tile_size[1]
                 )
+                rect_id = self.edit_canvas.create_rectangle(
+                    rect_position,
+                    outline="grey",
+                    fill=self.edit_get_bitmap_color(int(self.bitmap_id_input.get("1.0", tk.END).strip())),
+                    stipple="gray50",
+                    width=2
+                )
+                self.selected_bitmap[rect_position] = (rect_id,
+                                                       int(self.bitmap_id_input.get("1.0", tk.END).strip()))
+
+    def tile_unclicked(self, event):
+        if event.x < self.tk_asset_image.width() and event.y < self.tk_asset_image.height():
+            if self.edit_work_state in ["select_tile", "properties"]:
+                x = int(event.x / self.edit_tile_size[0])
+                y = int(event.y / self.edit_tile_size[1])
+                rect_position = (
+                    x * self.edit_tile_size[0],
+                    y * self.edit_tile_size[1],
+                    x * self.edit_tile_size[0] + self.edit_tile_size[0],
+                    y * self.edit_tile_size[1] + self.edit_tile_size[1]
+                )
+                if self.edit_work_state == "select_tile":
+                    if rect_position in self.selected_tiles.keys():
+                        rect_id = self.selected_tiles.pop(rect_position, None)  # Retrieve rectangle ID
+                        if rect_id is not None:  # Check if rectangle exists
+                            self.edit_canvas.delete(rect_id)  # Delete rectangle from canvas
+                    self.edit_select_tile()
+                if self.edit_work_state == "properties":
+                    if rect_position in self.properties_walkable.keys():
+                        rect_id = self.properties_walkable.pop(rect_position, None)  # Retrieve rectangle ID
+                        if rect_id is not None:  # Check if rectangle exists
+                            self.edit_canvas.delete(rect_id)  # Delete rectangle from canvas
+                    self.edit_properties()
+
+            elif self.edit_work_state == "bitmap" and self.bitmap_id_input.get("1.0", tk.END).strip().isdecimal():
+                bit_tile_size = (
+                    self.edit_tile_size[0] / self.tile_bitmap_shape[0],
+                    self.edit_tile_size[1] / self.tile_bitmap_shape[1]
+                )
+                x = int(event.x / (bit_tile_size[0]))
+                y = int(event.y / (bit_tile_size[1]))
+
+                rect_position = (
+                    x * bit_tile_size[0],
+                    y * bit_tile_size[1],
+                    x * bit_tile_size[0] + bit_tile_size[0],
+                    y * bit_tile_size[1] + bit_tile_size[1]
+                )
                 if rect_position in self.selected_bitmap.keys():
-                    self.edit_canvas.delete(self.selected_bitmap.get(rect_position)[0])
-                    self.selected_bitmap.pop(rect_position, None)
-                else:
-                    rect_id = self.edit_canvas.create_rectangle(
-                        rect_position,
-                        outline="grey",
-                        fill=self.edit_get_bitmap_color(int(self.bitmap_id_input.get("1.0", tk.END).strip())),
-                        stipple="gray50",
-                        width=2
-                    )
-                    self.selected_bitmap[rect_position] = (rect_id,
-                                                           int(self.bitmap_id_input.get("1.0", tk.END).strip()))
+                    rect_id = self.selected_bitmap.pop(rect_position, None)
+                    self.edit_canvas.delete(rect_id)
+                self.edit_bitmap()
 
 
 def build_neighbors_dict(t_types: [TileType]):
@@ -542,21 +698,20 @@ def build_neighbors_dict(t_types: [TileType]):
                   Direction.Left, Direction.Right,
                   Direction.LeftDown, Direction.Down, Direction.RightDown]
     neighbors_dict = {}
-    #dodawanie zera / służy ono za puste pole
+    # dodawanie zera / służy ono za puste pole
     all_types = []
     for num_0 in range(len(t_types)):
-        all_types.append(num_0+1)
+        all_types.append(num_0 + 1)
     neighbors_dict[0] = []
     for _ in Direction:
-         neighbors_dict[0].append(all_types)
-    #dodawanie pozostałych wartosci
+        neighbors_dict[0].append(all_types)
+    # dodawanie pozostałych wartosci
     for num, current_type in enumerate(t_types):
-        neighbors_dict[num+1] = []
+        neighbors_dict[num + 1] = []
         for direction in directions:
             direction_arr = []
             for num_2, t in enumerate(t_types):
                 if np.array_equal(t.puzzle_edge(direction.opposite()), current_type.puzzle_edge(direction)):
-                    direction_arr.append(num_2+1)
-            neighbors_dict[num+1].append(direction_arr)
-    print(neighbors_dict)
+                    direction_arr.append(num_2 + 1)
+            neighbors_dict[num + 1].append(direction_arr)
     return neighbors_dict

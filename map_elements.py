@@ -98,3 +98,11 @@ class Map:
             for _ in range(grid_size[1]):
                 temp.append(None)
             self.grid.append(temp)
+
+    def walkable_land(self):
+        count = 0
+        for row in self.grid:
+            for tile in row:
+                if tile is not None and tile.walkable:
+                    count += 1
+        return count

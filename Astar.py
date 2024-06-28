@@ -12,21 +12,19 @@ def a_star_path(start: (int, int), target: (int, int), _map: Map) -> [(int, int)
     open_set.append(start)
     g_score[start] = 0
     f_score[start] = heuristic(start, target)
-
     while len(open_set) > 0:
         current = get_lowest_f_score(open_set, f_score)
         if current == target:
             path = reconstruct_path(came_from, current)
-            print(f"Przeszukano {len(closed_set)} elementów \n Długość ścieżki: {len(path)}")
             return path
 
         open_set.remove(current)
         closed_set.add(current)
-
         for neighbor in get_neighbors(current, _map):
             if neighbor in closed_set or not _map.grid[neighbor[0]][neighbor[1]].walkable:
                 continue
-            tentative_g_score = g_score[current] + _map.grid[neighbor[0]][neighbor[1]].difficult_terrain
+
+            tentative_g_score = g_score[current] # + _map.grid[neighbor[0]][neighbor[1]].difficult_terrain
 
             if neighbor not in open_set or tentative_g_score < g_score.get(neighbor, float('inf')):
                 came_from[neighbor] = current
